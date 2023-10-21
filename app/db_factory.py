@@ -11,7 +11,5 @@ class Base(DeclarativeBase):
         "pk": "pk_%(table_name)s"
     })
 
-def database_factory(app) -> SQLAlchemy:
-    db = SQLAlchemy(model_class=Base)
-    db.init_app(app)
-    return db
+def database_factory() -> SQLAlchemy:
+    return SQLAlchemy(model_class=Base)

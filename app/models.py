@@ -15,6 +15,7 @@ class Cover(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     mimetype: Mapped[str] = mapped_column(String(15), nullable=False)
     md5_hash: Mapped[str] = mapped_column(String(32), nullable=False)
+    storage_ref: Mapped[str] = mapped_column(String(32), nullable=False)
 
 class Book(db.Model):
     __tablename__ = 'books'

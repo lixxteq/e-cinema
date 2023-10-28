@@ -1,5 +1,90 @@
 {% extends 'base.html' %}
 
 {% block main %}
-123
+<div class="container" style="background-color: rgba(208, 212, 216, 0.7);">
+    <div class="h-100 text-center d-flex flex-column p-3 flex-wrap">
+        <h1 class="text-body-secondary">E-Lib: Каталог книг</h1>
+        {% for book in books %}
+        <div class="card d-flex flex-row w-100" style="min-height: 250px">
+            <div class="d-flex col-4 justify-content-start gap-5">
+                <div class="cover-col col-4 flex-column flex-grow-1">
+                    <img src="{{ book.get_cover_url() }}" alt="Cover" class="border rounded-2 mw-100" style="max-height:100%;object-fit:cover;">
+                </div>
+            </div>
+            <div class="info_col d-flex ps-3 flex-column col-4 justify-content-center align-items-start text-start">
+                <div class="name-col">
+                    <p>Название книги</p>
+                    <h4>{{ book.name }}</h4>
+                </div>
+                <div class="pub-col">
+                    <p>Издательство</p>
+                    <h4>{{ book.publisher }}</h4>
+                </div>
+                <div class="year-col">
+                    <p>Год издания</p>
+                    <h4>{{ book.year }}</h4>
+                </div>
+            </div>
+
+            <div class="info_col d-flex col-4 flex-column justify-content-around">
+                <div class="text-center gap-3 mt-3 ">
+                    <h4>Жанры: </h4>
+                    <div class="d-flex genres-row flex-row flex-wrap justify-content-center">
+                        {% for g in book.genres %}
+                        <div class="bg-dark p-2 text-white border rounded-2">{{ g.name }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="rating-row d-flex flex-column">
+                    <h4>Рейтинг: </h4>
+                    <h4>{{ book.get_rating() }}/5 &#9733; (всего отзывов: {{ book.rating_amount }})</h4>
+                </div>
+            </div>
+        </div>
+        <div class="justify-content-end d-flex mb-3 gap-2">
+            <a href="{{ url_for('books.view', book_id=book.id) }}" class="btn btn-dark">Просмотреть</a>
+            {% if access_level >= 2 %}
+            <a href="" class="btn btn-dark">Редактировать</a>
+            {% endif %}
+            {% if access_level == 3 %}
+            <a href="" class="btn btn-danger">Удалить</a>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+    </div>
+    {% if access_level == 3 %}
+    <div class="text-center my-3">
+        <a class="btn btn-lg btn-secondary" href="{{ url_for('books.create') }}">Добавить новую книгу</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- {% if current_user.is_authenticated %}
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Удаление книги</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Вы уверены, что хотите удалить книгу
+                "<span class="delete-title"></span>"
+                ?
+                <form action="" class="d-none" method="POST">
+                    <input type="submit" id="submit-delete">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <label for="submit-delete" class="btn btn-danger mb-0">Удалить</label>
+            </div>
+        </div>
+    </div>
+</div>
+{%endif%} -->
+
+<!-- <script src="{{ url_for('static', filename='delete.js')}}"></script> -->
+
 {% endblock %}

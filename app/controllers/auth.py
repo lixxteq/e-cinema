@@ -1,13 +1,15 @@
 from models import db, User
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from sqlalchemy import select
+from sqlalchemy import select, insert
 from utils import flash_alert
+from flask_bcrypt import generate_password_hash
 
 controller = Blueprint('auth', __name__, url_prefix='/auth')
 
 def load_user(user_id):
-    return User.query.get(user_id)
+    return db.session.scalar(select(User).where(User.id == user_id))
+    # return User.query.get(user_id)
 
 def create_login_manager(app):
     login_manager = LoginManager()
@@ -16,9 +18,6 @@ def create_login_manager(app):
     login_manager.login_message_category = 'warning'
     login_manager.user_loader(load_user)
     login_manager.init_app(app)
-
-def role_access():
-    return True
 
 @controller.route('login', methods=['GET', 'POST'])
 def login():
@@ -31,7 +30,7 @@ def login():
                 login_user(user)
                 flash_alert(f'Вы вошли как {user.login} ({user.first_name})', 'success')
                 return redirect(request.args.get('next') or url_for('index'))
-        flash_alert('Невозможно аутентифицироваться с указанными логином и паролем', 'error')
+        flash_alert('Невозможно аутентифицироваться с указанными логином и паролем', 'danger')
     return render_template('login.html')
 
 @controller.route('logout')
@@ -39,3 +38,19 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for('index'))
+
+# development only
+@controller.route('create')
+def create():
+    user = User(
+        login = 'admin',
+        password_hash = generate_password_hash('12345').decode(),
+        first_name = 'Roman',
+        last_name = 'Zhakov',
+        middle_name = 'Sergeevich',
+        role_id = 3,
+    )
+    # db.session.execute(insert(User).values(user))
+    db.session.add(user)
+    db.session.commit()
+    return redirect(url_for('auth.login'))

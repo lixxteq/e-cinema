@@ -42,7 +42,23 @@ def logout():
 # development only
 @controller.route('create')
 def create():
-    user = User(
+    user1 = User(
+        login = 'visitor',
+        password_hash = generate_password_hash('12345').decode(),
+        first_name = 'Ivan',
+        last_name = 'Ivanov',
+        middle_name = 'I',
+        role_id = 1,
+    )
+    user2 = User(
+        login = 'moderator',
+        password_hash = generate_password_hash('12345').decode(),
+        first_name = 'Alexandr',
+        last_name = 'Alexandrov',
+        middle_name = 'A',
+        role_id = 2,
+    )
+    user3 = User(
         login = 'admin',
         password_hash = generate_password_hash('12345').decode(),
         first_name = 'Roman',
@@ -50,7 +66,7 @@ def create():
         middle_name = 'Sergeevich',
         role_id = 3,
     )
-    # db.session.execute(insert(User).values(user))
-    db.session.add(user)
+
+    db.session.add_all([user1, user2, user3])
     db.session.commit()
     return redirect(url_for('auth.login'))

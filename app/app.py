@@ -1,11 +1,11 @@
 from flask import Flask, render_template, request
-from flask_login import current_user, login_required, AnonymousUserMixin
+from flask_login import current_user, login_required
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 from os import getenv
 
 from sqlalchemy import select, desc, func
-from utils import flash_alert
+from utils import flash_alert, get_access_level, is_anonimous
 from models import db, Book
 from values import BOOKS_PER_PAGE, ADMIN_ACCESS_LEVEL, VISITOR_ACCESS_LEVEL, MODERATOR_ACCESS_LEVEL
 
@@ -25,14 +25,14 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(books_bp)
 create_login_manager(app)
 
+@app.context_processor
+def check_user_status(): 
+    return dict(is_anon=is_anonimous())
+
 @app.route('/')
 def index():
     page = request.args.get('page', 1, type=int)
     pages = db.session.execute(select(func.count(Book.id))).scalar_one()
     books = db.session.scalars(select(Book).order_by(desc(Book.year)).limit(BOOKS_PER_PAGE).offset((page-1) * BOOKS_PER_PAGE)).all()
-    # Проверка анонимности текущего пользователя через принадлежность к UserMixin классу анонимного пользователя
-    if (isinstance(current_user._get_current_object(), AnonymousUserMixin)):
-        access_level = VISITOR_ACCESS_LEVEL
-    else: access_level = current_user._get_current_object().role_id
 
-    return render_template('index.html', books=books, page=page, pages=pages, access_level=access_level)
+    return render_template('index.html', books=books, page=page, pages=pages, access_level=get_access_level())

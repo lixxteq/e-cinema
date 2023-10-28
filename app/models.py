@@ -57,8 +57,9 @@ class Book(Base):
     def get_cover_url(self):
         return url_for('static', filename=f'upload/{self.cover.filename}')
     
-    cover: Mapped['Cover'] = relationship(back_populates='book')
+    cover: Mapped['Cover'] = relationship(back_populates='book', lazy='subquery')
     genres: Mapped[List['Genre']] = relationship(secondary=book_genre_m2m, back_populates='books')
+    reviews: Mapped[List['Review']] = relationship(back_populates='book')
 
 class Role(Base):
     __tablename__ = 'roles'
@@ -90,10 +91,11 @@ class Review(Base):
     __tablename__ = 'reviews'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    book_id: Mapped[int] = mapped_column(ForeignKey(Book.id), nullable=False)
-    user_id: Mapped[int] = mapped_column(ForeignKey(User.id), nullable=False)
+    book_id: Mapped[int] = mapped_column(ForeignKey(Book.id, ondelete='CASCADE'), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey(User.id, ondelete='CASCADE'), nullable=False)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     date: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=alc.sql.func.now())
 
     user: Mapped['User'] = relationship(back_populates='reviews')
+    book: Mapped['Book'] = relationship(back_populates='reviews')

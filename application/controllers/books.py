@@ -37,7 +37,7 @@ def create():
         if not cover:
             return redirect(url_for('books.create'))
         selected_genres = db.session.scalars(select(Genre).where(Genre.id.in_(map(int, genres))))
-        book = Book(name=name, description=description, year=int(year), pages=int(pages), publisher=publisher, cover_id = cover.id)
+        book = Book(name=name, year=int(year), pages=int(pages), publisher=publisher, cover_id = cover.id)
         for g in selected_genres:
             book.genres.append(g)
         db.session.add(book)

@@ -1,24 +1,20 @@
 from flask import Flask, render_template, request
 from flask_login import current_user, login_required
-from flask_migrate import Migrate
 from dotenv import load_dotenv
 from os import getenv
-
+from db_factory import Database
 from sqlalchemy import select, desc, func
-from utils import flash_alert, get_access_level, is_anonimous
-from models import db, Book
 from values import BOOKS_PER_PAGE, ADMIN_ACCESS_LEVEL, VISITOR_ACCESS_LEVEL, MODERATOR_ACCESS_LEVEL
 
-application = app = Flask(__name__)
 load_dotenv()
+application = app = Flask(__name__)
 app.config.from_object('config.DevConfig' if getenv('FLASK_ENV') == 'development' else 'config.ProdConfig')
-app.jinja_env.auto_reload = True
 
-db.init_app(app)
-migrate = Migrate(app, db)
-with app.app_context():
-    db.create_all()
+db = Database(app=app)
+migrate = db.init_migrate()
 
+from models import Book
+from utils import flash_alert, get_access_level, is_anonimous
 from controllers.auth import controller as auth_bp, create_login_manager
 from controllers.books import controller as books_bp, has_access
 app.register_blueprint(auth_bp)

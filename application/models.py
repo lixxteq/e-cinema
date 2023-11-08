@@ -1,15 +1,13 @@
 import datetime
 from typing import List, Optional
-
 from flask import url_for
-from db_factory import database_factory, Base
+from db_factory import Base
 import sqlalchemy as alc
 from sqlalchemy import Integer, String, Text, ForeignKey, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from flask_bcrypt import generate_password_hash, check_password_hash
 from flask_login import UserMixin
-
-db = database_factory()
+from app import db
 
 class Cover(Base):
     __tablename__ = 'covers'
@@ -68,7 +66,7 @@ class Role(Base):
     name: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
     description: Mapped[str] = mapped_column(Text, nullable=False)
 
-class User(UserMixin, Base):
+class User(Base, UserMixin):
     __tablename__ = 'users'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -99,3 +97,5 @@ class Review(Base):
 
     user: Mapped['User'] = relationship(back_populates='reviews')
     book: Mapped['Book'] = relationship(back_populates='reviews')
+
+db.init_schema()

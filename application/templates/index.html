@@ -43,12 +43,14 @@
         </div>
         <div class="justify-content-end d-flex mb-3 gap-2">
             <a href="{{ url_for('books.view', book_id=book.id) }}" class="btn btn-dark">Просмотреть</a>
-            {% if access_level >= 2 %}
+            {% if current_user.is_authenticated %}
+            {% if current_user.access_level >= access_level_map['moderator'] %}
             <a href="{{ url_for('books.edit', book_id=book.id) }}" class="btn btn-dark">Редактировать</a>
             {% endif %}
-            {% if access_level == 3 %}
-            <a href="" class="btn btn-danger" data-url="{{ url_for('books.delete', book_id=book.id) }}" data-bs-toggle="modal"
+            {% if current_user.access_level >= access_level_map['administrator'] %}
+            <a class="btn btn-danger" data-url="{{ url_for('books.delete', book_id=book.id) }}" data-bs-toggle="modal"
             data-bs-target="#deleteModal" data-name="{{ book.name }}">Удалить</a>
+            {% endif %}
             {% endif %}
         </div>
         {% endfor %}

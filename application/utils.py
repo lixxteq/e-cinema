@@ -2,15 +2,15 @@ from hashlib import md5
 from uuid import uuid4
 from flask import flash
 from markupsafe import Markup
+from bleach import clean
 from sqlalchemy import select
 from werkzeug.datastructures import FileStorage
-from values import VISITOR_ACCESS_LEVEL
 from models import Cover, db
 from werkzeug.utils import secure_filename
 from os import path, remove
-from flask_login import current_user, AnonymousUserMixin
+from flask_login import AnonymousUserMixin, current_user
 
-# Использует заготовленный HTML для отображения flash-сообщений в виде само-исчезающих алертов
+# Inject styled bootstrap-alert html in template html alert block
 def flash_alert(message, category):
     alert = Markup(
         f"""
@@ -23,23 +23,6 @@ def flash_alert(message, category):
     """
     )
     flash(alert, category)
-
-
-def get_access_level():
-    if (isinstance(current_user._get_current_object(), AnonymousUserMixin)):
-        return VISITOR_ACCESS_LEVEL
-    return current_user._get_current_object().role_id
-
-# Проверка анонимности текущего пользователя через принадлежность к UserMixin классу анонимного пользователя
-def is_anonimous():
-    if (isinstance(current_user._get_current_object(), AnonymousUserMixin)):
-        return True
-    return False
-
-def get_user_id():
-    if not is_anonimous():
-        return current_user._get_current_object().id
-    return None
 
 class CoverManager:
     def __init__(self, cover_file: FileStorage):
@@ -73,3 +56,19 @@ class CoverManager:
         remove(cover_path)
         db.session.delete(cover)
         db.session.commit()
+
+class Validator:
+    @staticmethod
+    def validate_rating(form_select):
+        if form_select == None:
+            return None
+        rating = int(form_select)
+        if not 1 <= rating <= 5:
+            return None
+        return rating
+    
+    @staticmethod
+    def validate_review(form_textarea):
+        if form_textarea == None or form_textarea == '':
+            return None
+        return clean(form_textarea)

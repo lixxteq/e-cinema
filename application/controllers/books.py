@@ -1,22 +1,23 @@
-from utils import CoverManager, flash_alert, get_access_level, is_anonimous, get_user_id
+from utils import CoverManager, Validator, flash_alert
 from models import Genre, db, User, Book, Cover, Review
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from flask_login import LoginManager, login_required, current_user
+from flask_login import LoginManager, login_required
 from sqlalchemy import select
-from values import VISITOR_ACCESS_LEVEL, ADMIN_ACCESS_LEVEL, MODERATOR_ACCESS_LEVEL
+from values import ACCESS_LEVEL_MAP
 import bleach
 from os import path
 from markdown import markdown
+from app import current_user
 
 controller = Blueprint('books', __name__, url_prefix='/books')
 
-def has_access(user, required_role):
-    return True if user._get_current_object().role_id >= required_role else False
+# def has_access(user, required_role):
+#     return True if user._get_current_object().role_id >= required_role else False
 
 @controller.route('create', methods=['GET', 'POST'])
 @login_required
 def create():
-    if not has_access(current_user, ADMIN_ACCESS_LEVEL):
+    if not current_user.access_level == ACCESS_LEVEL_MAP['administrator']:
         flash_alert('У вас недостаточно прав для выполнения данного действия', 'danger')
         return redirect(url_for('index'))
     if request.method == 'GET':
@@ -24,6 +25,7 @@ def create():
     if request.method == 'POST':
         name = request.form.get('name')
         description = bleach.clean(str(request.form.get('description')))
+        print(description)
         year = request.form.get('year')
         pages = request.form.get('pages')
         publisher = request.form.get('publisher')
@@ -37,7 +39,7 @@ def create():
         if not cover:
             return redirect(url_for('books.create'))
         selected_genres = db.session.scalars(select(Genre).where(Genre.id.in_(map(int, genres))))
-        book = Book(name=name, year=int(year), pages=int(pages), publisher=publisher, cover_id = cover.id)
+        book = Book(name=name, description=description, year=int(year), pages=int(pages), publisher=publisher, cover_id = cover.id)
         for g in selected_genres:
             book.genres.append(g)
         db.session.add(book)
@@ -53,45 +55,48 @@ def view(book_id):
         return redirect(url_for('index'))
     if request.method == 'GET':
         genres = book.genres
-        cover_url = url_for('static', filename=f'upload/{book.cover.filename}')
+        cover_url = url_for('static', filename=f'upload/{book.cover.filename}') # needs refactoring
         description = markdown(book.description)
         raw_reviews = db.session.scalars(select(Review).where(Review.book_id == book_id)).all()
         user_review = None
         reviews = []
         if raw_reviews.__len__() > 0:
-            user_review = [review for review in raw_reviews if not is_anonimous() and review.user_id == get_user_id()]
+            user_review = [review for review in raw_reviews if not current_user.is_anonymous and review.user_id == current_user.id]
             user_review = user_review[0] if user_review.__len__() > 0 else None
             for rev in raw_reviews:
-                if rev.user_id != get_user_id():
+                if current_user.is_authenticated and rev.user_id != current_user.id:
                     reviews.append({
                         'user': f'{rev.user.first_name} {rev.user.last_name}',
                         'text': markdown(rev.text),
                         'rating': rev.rating
                     })
-        return render_template('book_view.html', genres=genres, cover_url=cover_url, description=description, reviews=reviews, book=book, user_review=user_review, is_anonimous=is_anonimous, access_level=get_access_level())
+        return render_template('book_view.html', genres=genres, cover_url=cover_url, description=description, reviews=reviews, book=book, user_review=user_review)
     if request.method == 'POST':
-        if is_anonimous():
+        if current_user.is_anonymous:
             flash_alert('Авторизуйтесь для добавления отзыва', 'danger')
             redirect(url_for('auth.login'))
-        user_id = get_user_id()
-        text = bleach.clean(str(request.form.get('review')))
-        rating = int(request.form.get('rating_select')) if request.form.get('rating_select') else None # type: ignore
+        user_id = current_user.id
+        text = Validator.validate_review(request.form.get('review'))
+        rating = Validator.validate_rating(request.form.get('rating_select'))
         # Если отзыв пользователя уже существует, не дает создать новый
         if db.session.scalar(select(Review).where(Review.user_id == user_id)):
-            flash_alert('Произошла ошибка', 'danger')
+            flash_alert('Произошла ошибка: вы не можете добавить отзыв', 'danger')
             return redirect(url_for('index'))
-        if rating:
+        if rating and text:
             book.rating_amount += 1
             book.rating_summary += rating
-        db.session.add(Review(user_id=user_id, book_id=book_id, rating=rating, text=text))
-        db.session.commit()
-        flash_alert('Ваш отзыв был добавлен', 'success')
+            db.session.add(Review(user_id=user_id, book_id=book_id, rating=rating, text=text))
+            db.session.commit()
+            flash_alert('Ваш отзыв был добавлен', 'success')
+        else:
+            flash_alert('Произошла ошибка: вы не можете добавить отзыв', 'danger')
+            return redirect(url_for('index'))
     return redirect(url_for('books.view', book_id=book.id))
 
 @controller.route('edit/<int:book_id>', methods=['GET', 'POST'])
 @login_required
 def edit(book_id):
-    if not has_access(current_user, MODERATOR_ACCESS_LEVEL):
+    if not current_user.access_level >= ACCESS_LEVEL_MAP['moderator']:
         flash_alert('У вас недостаточно прав для выполнения данного действия', 'danger')
         return redirect(url_for('index'))
     book = db.session.scalar(select(Book).where(Book.id == book_id))
@@ -136,7 +141,7 @@ def edit(book_id):
 @controller.route('/delete/<int:book_id>', methods=['POST'])
 @login_required
 def delete(book_id):
-    if not has_access(current_user, ADMIN_ACCESS_LEVEL):
+    if not current_user.access_level == ACCESS_LEVEL_MAP['administrator']:
         flash_alert('У вас недостаточно прав для выполнения данного действия', 'danger')
         return redirect(url_for('index'))
     if request.method == 'POST':

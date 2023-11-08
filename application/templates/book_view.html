@@ -48,12 +48,14 @@
         </div>
     </div>
     <div class="justify-content-end d-flex mb-3 gap-2">
-        {% if access_level >= 2 %}
+        {% if current_user.is_authenticated %}
+        {% if current_user.access_level >= access_level_map['moderator'] %}
         <a href="{{ url_for('books.edit', book_id=book.id) }}" class="btn btn-dark">Редактировать</a>
         {% endif %}
-        {% if access_level == 3 %}
+        {% if current_user.access_level >= access_level_map['administrator'] %}
         <a href="" class="btn btn-danger" data-url="{{ url_for('books.delete', book_id=book.id) }}" data-bs-toggle="modal"
         data-bs-target="#deleteModal" data-name="{{ book.name }}">Удалить</a>
+        {% endif %}
         {% endif %}
     </div>
 
@@ -67,7 +69,7 @@
             Оценка: {{ user_review.rating }}/5 &#9733;
         </div>
     </div>
-    {% elif not is_anonimous() %}
+    {% elif not current_user.is_anonymous%}
     <div class="rev_row d-flex mb-4">
         <form method="POST" class="flex-grow-1 col-6">
             <div class="mb-3 mt-3 d-flex flex-column">
@@ -82,7 +84,6 @@
                     <option value="3">3/5 (Удовлетворительно)</option>
                     <option value="2">2/5 (Неудовлетворительно)</option>
                     <option value="1">1/5 (Плохо)</option>
-                    <option value="0">0/5 (Ужасно)</option>
                 </select>
             </div>
             <div class="mb-3 text-center">

@@ -6,7 +6,7 @@ services:
     image: mysql:8.1.0
     environment:
       - MYSQL_ROOT_PASSWORD=admin
-      - MYSQL_DATABASE=elib
+      - MYSQL_DATABASE=ecdb
     restart: unless-stopped
     ports:
       - "3306:3306"

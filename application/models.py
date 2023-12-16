@@ -1,11 +1,12 @@
 import datetime
+import re
 from typing import List, Optional
 from flask import url_for
 from values import ACCESS_LEVEL_MAP
 from db_factory import Base
 import sqlalchemy as alc
 from sqlalchemy import Integer, String, Text, ForeignKey, DateTime
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from flask_bcrypt import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from app import db
@@ -73,12 +74,15 @@ class User(Base, UserMixin):
     __tablename__ = 'users'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    login: Mapped[str] = mapped_column(String(30), nullable=False, unique=True)
+    login: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    display_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    email: Mapped[str] = mapped_column(String(320), nullable=False, unique=True)
     password_hash: Mapped[str] = mapped_column(String(100), nullable=False)
-    last_name: Mapped[str] = mapped_column(String(40), nullable=False)
-    first_name: Mapped[str] = mapped_column(String(40), nullable=False)
-    middle_name: Mapped[Optional[str]] = mapped_column(String(40))
+    # last_name: Mapped[str] = mapped_column(String(40), nullable=False)
+    # first_name: Mapped[str] = mapped_column(String(40), nullable=False)
+    # middle_name: Mapped[Optional[str]] = mapped_column(String(40))
     role_id: Mapped[int] = mapped_column(ForeignKey(Role.id), nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=alc.sql.func.now())
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password).decode()
@@ -89,7 +93,19 @@ class User(Base, UserMixin):
     @property
     def access_level(self):
         return ACCESS_LEVEL_MAP[self.role.name]
+    # todo: extend
+    @validates('email')
+    def validate_email(self, key, value):
+        if re.match(r'[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*', value):
+            return value
+        raise ValueError('User.validates(email)')
     
+    @validates('login')
+    def validate_login(self, key, value):
+        if re.match(r'(?=.*\d)(?=.*[a-zA-Z]).{8,}', value):
+            return value
+        raise ValueError('User.validates(login)')
+
     reviews: Mapped[List['Review']] = relationship(back_populates='user')
     role: Mapped['Role'] = relationship('Role')
 

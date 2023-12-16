@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import LoginManager, login_required
 from sqlalchemy import select
 from values import ACCESS_LEVEL_MAP
-import bleach
+from nh3 import clean
 from os import path
 from markdown import markdown
 from app import current_user
@@ -24,7 +24,7 @@ def create():
         return render_template('book_create.html', genres=db.session.scalars(select(Genre)).all()) # scalar dehaviour?
     if request.method == 'POST':
         name = request.form.get('name')
-        description = bleach.clean(str(request.form.get('description')))
+        description = clean(str(request.form.get('description')))
         print(description)
         year = request.form.get('year')
         pages = request.form.get('pages')
@@ -108,7 +108,7 @@ def edit(book_id):
         return render_template('book_edit.html', book=book, genres=genres)
     if request.method == 'POST':
         name = request.form.get('name')
-        description = bleach.clean(str(request.form.get('description')))
+        description = clean(str(request.form.get('description')))
         year = request.form.get('year')
         pages = request.form.get('pages')
         publisher = request.form.get('publisher')

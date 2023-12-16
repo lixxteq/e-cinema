@@ -1,0 +1,7 @@
+.v-valid {
+    color: green;
+}
+
+.v-invalid {
+    color: yellow;
+}

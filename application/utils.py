@@ -2,16 +2,19 @@ from hashlib import md5
 from uuid import uuid4
 from flask import flash
 from markupsafe import Markup
-from bleach import clean
+from nh3 import clean
 from sqlalchemy import select
 from werkzeug.datastructures import FileStorage
 from models import Cover, db
 from werkzeug.utils import secure_filename
 from os import path, remove
 from flask_login import AnonymousUserMixin, current_user
+from typing import Sequence, TypeVar
+from sqlalchemy.engine.result import _RowData
+T = TypeVar('T', bound=_RowData)
 
-# Inject styled bootstrap-alert html in template html alert block
 def flash_alert(message, category):
+    """Inject stylized bootstrap alert HTML in template's alert block"""
     alert = Markup(
         f"""
     <div class="alert alert-{category} alert-dismissible fade show w-25 position-fixed mt-3 ms-3" role="alert" style="opacity: 0.98; z-index: 10000">
@@ -24,7 +27,13 @@ def flash_alert(message, category):
     )
     flash(alert, category)
 
+
+def seq_fetch_one(sequence: Sequence[T], key: str, value) -> T:
+    """Iterate through sequence of scalar values and select one satisfying requirement [key:value]"""
+    return next(filter(lambda o: getattr(o, key) == value, sequence))
+
 class CoverManager:
+    """Implements methods for working with Cover model: database and filesystem saving and deleting, hashing and duplicate prevention"""
     def __init__(self, cover_file: FileStorage):
         self.cover_file = cover_file
 
@@ -58,6 +67,7 @@ class CoverManager:
         db.session.commit()
 
 class Validator:
+    """Implements static methods for validating and formatting user form-data input"""
     @staticmethod
     def validate_rating(form_select):
         if form_select == None:
@@ -72,3 +82,9 @@ class Validator:
         if form_textarea == None or form_textarea == '':
             return None
         return clean(form_textarea)
+    
+    @staticmethod
+    def validate_email(form_email):
+        if form_email == None or form_email == '':
+            return None
+        return form_email

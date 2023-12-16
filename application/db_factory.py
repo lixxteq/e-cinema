@@ -21,7 +21,7 @@ class Database(SQLAlchemy):
         self._create_db()
 
     def _create_db(self):
-        with create_engine(self._app.config['RAW_SQLALCHEMY_DATABASE_URI']).connect() as connection:
+        with create_engine(self._app.config['ENGINE_URI']).connect() as connection:
             connection.execute(text(f'CREATE DATABASE IF NOT EXISTS {Config.DB_NAME}'))
 
     def init_schema(self):

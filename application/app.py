@@ -5,13 +5,17 @@ from os import getenv
 from db_factory import Database
 from sqlalchemy import select, desc, func
 from values import ACCESS_LEVEL_MAP, BOOKS_PER_PAGE
+from flask_debugtoolbar import DebugToolbarExtension
 
 load_dotenv()
 application = app = Flask(__name__)
 app.config.from_object('config.DevConfig' if getenv('FLASK_ENV') == 'development' else 'config.ProdConfig')
+if app.config['ENV'] == 'development': 
+    print(app.config)
 
 db = Database(app=app)
 migrate = db.init_migrate()
+toolbar = DebugToolbarExtension(app=app)
 
 from models import Book, User
 from utils import flash_alert

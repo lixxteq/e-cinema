@@ -1,15 +1,25 @@
 import datetime
 import re
-from typing import List, Optional
+from typing import List, Literal, get_args
+from functools import reduce
 from flask import url_for
 from values import ACCESS_LEVEL_MAP
 from db_factory import Base
 import sqlalchemy as alc
-from sqlalchemy import Integer, String, Text, ForeignKey, DateTime
+from sqlalchemy import Integer, String, Text, ForeignKey, DateTime, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from flask_bcrypt import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from app import db
+
+Category = Literal['movie', 'show']
+
+class MediaSource(Base):
+    __tablename__ = 'media_sources'
+
+    composite_id: Mapped[str] = mapped_column(String(30), primary_key=True, unique=True) # movie id (ex: 124) / show id with season and episode number suffix (ex: 125_1_6)
+    # prefix: Mapped[str] = mapped_column(String, nullable=False)
+    source: Mapped[str] = mapped_column(String(255), nullable=False)
 
 class Cover(Base):
     __tablename__ = 'covers'
@@ -19,12 +29,12 @@ class Cover(Base):
     md5_hash: Mapped[str] = mapped_column(String(32), nullable=False)
     filename: Mapped[str] = mapped_column(String(50), nullable=False)
 
-    book: Mapped['Book'] = relationship(back_populates='cover')
+    media: Mapped['Media'] = relationship(back_populates='cover')
 
-book_genre_m2m = db.Table(
-    'book_genre',
+media_genre_m2m = db.Table(
+    'media_genre',
     Base.metadata,
-    alc.Column('book_id', ForeignKey('books.id', ondelete='CASCADE'), primary_key=True),
+    alc.Column('media_id', ForeignKey('media.media_id', ondelete='CASCADE'), primary_key=True),
     alc.Column('genre_id', ForeignKey('genres.id', ondelete='CASCADE'), primary_key=True),
 )
 
@@ -34,32 +44,96 @@ class Genre(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
 
-    books: Mapped[List['Book']] = relationship(secondary=book_genre_m2m, back_populates='genres')
+    media: Mapped[List['Media']] = relationship(secondary=media_genre_m2m, back_populates='genres')
 
-class Book(Base):
-    __tablename__ = 'books'
+class Country(Base):
+    __tablename__ = 'countries'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    code: Mapped[str] = mapped_column(String(3), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(30), nullable=False)
+
+    media: Mapped[List['Media']] = relationship(back_populates='country')
+
+class Media(Base):
+    __tablename__ = 'media'
+
+    media_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    category: Mapped[Category] = mapped_column(Enum(*get_args(Category), name='category', create_constraint=True, validate_strings=True))
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     year: Mapped[int] = mapped_column(Integer, nullable=False)
-    publisher: Mapped[str] = mapped_column(String(50), nullable=False)
-    pages: Mapped[int] = mapped_column(Integer, nullable=False)
-    cover_id: Mapped[int] = mapped_column(ForeignKey(Cover.id, ondelete='CASCADE'), nullable=False)
+    age_rate: Mapped[int] = mapped_column(Integer, nullable=True)
+    publisher: Mapped[str] = mapped_column(String(50), nullable=True)
+
+    cover_id: Mapped[int] = mapped_column(ForeignKey(Cover.id, ondelete='SET NULL', onupdate='CASCADE'), nullable=True)
+    country_id: Mapped[str] = mapped_column(ForeignKey(Country.id, onupdate='CASCADE'), nullable=False)
+
     rating_summary: Mapped[int] = mapped_column(db.Integer, nullable=False, default=0)
     rating_amount: Mapped[int] = mapped_column(db.Integer, nullable=False, default=0)
+
+    cover: Mapped['Cover'] = relationship(back_populates='media', lazy='subquery')
+    country: Mapped['Country'] = relationship(back_populates='media')
+    genres: Mapped[List['Genre']] = relationship(secondary=media_genre_m2m, back_populates='media')
+    reviews: Mapped[List['Review']] = relationship(back_populates='media')
 
     def get_rating(self):
         if self.rating_amount == 0:
             return 0
-        return self.rating_summary / self.rating_amount
+        return round(self.rating_summary / self.rating_amount, 1)
 
+    # TODO: content path 
     def get_cover_url(self):
         return url_for('static', filename=f'upload/{self.cover.filename}')
+
+class Movie(Base):
+    __tablename__ = 'movies'
+
+    id: Mapped[int] = mapped_column(ForeignKey(Media.media_id, ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
+    duration: Mapped[int] = mapped_column(Integer, nullable=True)
+
+    @property
+    def source_composite_id(self) -> str:
+        return str(self.id)
+
+class Show(Base):
+    __tablename__ = 'shows'
+
+    id: Mapped[int] = mapped_column(ForeignKey(Media.media_id, ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
+
+    seasons: Mapped[List['Season']] = relationship(back_populates='show')
+
+    def seasons_count(self):
+        return self.seasons.__len__()
     
-    cover: Mapped['Cover'] = relationship(back_populates='book', lazy='subquery')
-    genres: Mapped[List['Genre']] = relationship(secondary=book_genre_m2m, back_populates='books')
-    reviews: Mapped[List['Review']] = relationship(back_populates='book')
+    def episodes_count(self):
+        return reduce(lambda t, c: t + c.episodes_count(), self.seasons, 0)
+
+class Season(Base):
+    __tablename__ = 'seasons'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    number: Mapped[int] = mapped_column(Integer, nullable=False)
+    show_id: Mapped[int] = mapped_column(ForeignKey(Show.id, ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+
+    show: Mapped['Show'] = relationship(back_populates='seasons')
+    episodes: Mapped[List['Episode']] = relationship(back_populates='season')
+
+    def episodes_count(self):
+        return self.episodes.__len__()
+
+class Episode(Base):
+    __tablename__ = 'episodes'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    number: Mapped[int] = mapped_column(Integer, nullable=False)
+    season_id: Mapped[int] = mapped_column(ForeignKey(Season.id, ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+
+    season: Mapped['Season'] = relationship(back_populates='episodes')
+
+    @property
+    def source_composite_id(self) -> str:
+        return f'{self.season.show_id}_{self.season.number}_{self.number}'
 
 class Role(Base):
     __tablename__ = 'roles'
@@ -93,7 +167,7 @@ class User(Base, UserMixin):
     @property
     def access_level(self):
         return ACCESS_LEVEL_MAP[self.role.name]
-    # todo: extend
+    # TODO: extend
     @validates('email')
     def validate_email(self, key, value):
         if re.match(r'[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*', value):
@@ -113,13 +187,13 @@ class Review(Base):
     __tablename__ = 'reviews'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    book_id: Mapped[int] = mapped_column(ForeignKey(Book.id, ondelete='CASCADE'), nullable=False)
+    media_id: Mapped[int] = mapped_column(ForeignKey(Media.media_id, ondelete='CASCADE'), nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey(User.id, ondelete='CASCADE'), nullable=False)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     date: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=alc.sql.func.now())
 
     user: Mapped['User'] = relationship(back_populates='reviews')
-    book: Mapped['Book'] = relationship(back_populates='reviews')
+    media: Mapped['Media'] = relationship(back_populates='reviews')
 
 db.init_schema()

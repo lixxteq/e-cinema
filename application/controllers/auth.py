@@ -31,7 +31,7 @@ def login():
             user = db.session.scalar(select(User).filter_by(login=login))
             if user and user.check_password(password):
                 login_user(user, remember=bool(remember_me))
-                flash_alert(f'Вы вошли как {user.login} ({user.first_name})', 'success')
+                flash_alert(f'Вы вошли как {user.login}', 'success')
                 return redirect(request.args.get('next') or url_for('index'))
         flash_alert('Невозможно аутентифицироваться с указанными логином и паролем', 'danger')
     return render_template('login.html')
@@ -56,47 +56,42 @@ def register():
             user.set_password(password)
     return render_template('register.html')
 
+@controller.route('devrg')
+def devrg():
+    roles = db.session.scalars(select(Role)).all()
+    user1 = User(
+        login = 'visitor1',
+        password_hash = generate_password_hash('visitor1').decode(),
+        email = 'qwerty1@domain.com',
+        display_name = 'display1',
+        role = seq_fetch_one(roles, 'name', 'visitor'),
+        # role_id = 1
+    )
+    user2 = User(
+        login = 'moderator1',
+        password_hash = generate_password_hash('moderator1').decode(),
+        email = 'qwerty2@domain.com',
+        display_name = 'display2',
+        # role = next(filter(lambda x: x.name == 'moderator', roles)),
+        role = seq_fetch_one(roles, 'name', 'moderator')
+        # roles.
+        # role_id = 2
+    )
+    user3 = User(
+        login = 'administrator1',
+        password_hash = generate_password_hash('administrator1').decode(),
+        email = 'qwerty3@domain.com',
+        display_name = 'display3',
+        # role = next(filter(lambda x: x.name == 'administrator', rdict)),
+        role = seq_fetch_one(roles, 'name', 'administrator')
+        # role_id = 3d
+    )
 
+    db.session.add_all([user1, user2, user3])
+    db.session.commit()
+    return redirect(url_for('auth.login'))
 
-
-
-
-    # user1 = User(
-    #     login = 'visitor',
-    #     password_hash = generate_password_hash('12345').decode(),
-    #     first_name = 'Ivan',
-    #     last_name = 'Ivanov',
-    #     middle_name = 'I',
-    #     role = seq_fetch_one(roles, 'name', 'visitor'),
-    #     # role_id = 1
-    # )
-    # user2 = User(
-    #     login = 'moderator',
-    #     password_hash = generate_password_hash('12345').decode(),
-    #     first_name = 'Alexandr',
-    #     last_name = 'Alexandrov',
-    #     middle_name = 'A',
-    #     # role = next(filter(lambda x: x.name == 'moderator', roles)),
-    #     role = seq_fetch_one(roles, 'name', 'moderator')
-    #     # roles.
-    #     # role_id = 2
-    # )
-    # user3 = User(
-    #     login = 'admin',
-    #     password_hash = generate_password_hash('12345').decode(),
-    #     first_name = 'R',
-    #     last_name = 'Z',
-    #     middle_name = 'D',
-    #     # role = next(filter(lambda x: x.name == 'administrator', rdict)),
-    #     role = seq_fetch_one(roles, 'name', 'visitor')
-    #     # role_id = 3d
-    # )
-
-    # db.session.add_all([user1, user2, user3])
-    # db.session.commit()
-    # return redirect(url_for('auth.login'))
-
-@controller.route('create')
-@login_required
-def create():
-    return render_template()
+# @controller.route('create')
+# @login_required
+# def create():
+#     return render_template()

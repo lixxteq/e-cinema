@@ -27,7 +27,7 @@ def flash_alert(message, category):
     )
     flash(alert, category)
 
-
+# TODO: emits exception on empty / unsatisfying result
 def seq_fetch_one(sequence: Sequence[T], key: str, value) -> T:
     """Iterate through sequence of scalar values and select one satisfying requirement [key:value]"""
     return next(filter(lambda o: getattr(o, key) == value, sequence))

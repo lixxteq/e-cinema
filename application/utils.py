@@ -1,16 +1,18 @@
 from hashlib import md5
 from uuid import uuid4
-from flask import flash
+from flask import flash, url_for, request, redirect, session
 from markupsafe import Markup
 from nh3 import clean
 from sqlalchemy import select
 from werkzeug.datastructures import FileStorage
+from values import ACCESS_LEVEL_MAP
 from models import Cover, db
 from werkzeug.utils import secure_filename
 from os import path, remove
 from flask_login import AnonymousUserMixin, current_user
 from typing import Sequence, TypeVar
 from sqlalchemy.engine.result import _RowData
+from functools import wraps
 T = TypeVar('T', bound=_RowData)
 
 def flash_alert(message, category):
@@ -63,8 +65,8 @@ class CoverManager:
     def delete(cover: Cover):
         cover_path = path.join(path.dirname(path.abspath(__file__)), 'static', 'upload', cover.filename)
         remove(cover_path)
-        db.session.delete(cover)
-        db.session.commit()
+        # db.session.delete(cover)
+        # db.session.commit()
 
 class Validator:
     """Implements static methods for validating and formatting user form-data input"""
@@ -88,3 +90,16 @@ class Validator:
         if form_email == None or form_email == '':
             return None
         return form_email
+    
+def access_guard(current_user, req_access_level):
+    """Access level guard decorator. Responses with error if authenticated user has no access to specified endpoint"""
+    def decorator(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            if not current_user or not current_user.has_access(ACCESS_LEVEL_MAP[req_access_level]):
+                flash_alert('У вас недостаточно прав для выполнения данного действия', 'danger')
+                return redirect(url_for('index'))
+
+            return f(*args, **kwargs)
+        return wrapped
+    return decorator

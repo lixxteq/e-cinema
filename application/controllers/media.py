@@ -1,5 +1,5 @@
-from utils import CoverManager, Validator, flash_alert
-from models import Genre, db, User, Book, Cover, Review
+from utils import CoverManager, Validator, flash_alert, access_guard
+from models import Genre, db, User, Media, Cover, Review
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import LoginManager, login_required
 from sqlalchemy import select
@@ -9,19 +9,18 @@ from os import path
 from markdown import markdown
 from app import current_user
 
-controller = Blueprint('books', __name__, url_prefix='/books')
+controller = Blueprint('media', __name__, url_prefix='/movies')
 
 # def has_access(user, required_role):
 #     return True if user._get_current_object().role_id >= required_role else False
 
 @controller.route('create', methods=['GET', 'POST'])
 @login_required
+@access_guard(current_user, 'administrator')
 def create():
-    if not current_user.access_level == ACCESS_LEVEL_MAP['administrator']:
-        flash_alert('У вас недостаточно прав для выполнения данного действия', 'danger')
-        return redirect(url_for('index'))
+    # if not current_user.has_access(ACCESS_LEVEL_MAP['administrator']):
     if request.method == 'GET':
-        return render_template('book_create.html', genres=db.session.scalars(select(Genre)).all()) # scalar dehaviour?
+        return render_template('book_create.html', genres=db.session.scalars(select(Genre)).all()) # TODO: inspect scalar dehaviour
     if request.method == 'POST':
         name = request.form.get('name')
         description = clean(str(request.form.get('description')))
@@ -138,21 +137,19 @@ def edit(book_id):
         flash_alert('Книга отредактирована!', 'success')
     return redirect(url_for('books.view', book_id=book_id))
 
-@controller.route('/delete/<int:book_id>', methods=['POST'])
+@controller.route('/delete/<int:media_id>', methods=['POST', 'GET'])
 @login_required
-def delete(book_id):
-    if not current_user.access_level == ACCESS_LEVEL_MAP['administrator']:
-        flash_alert('У вас недостаточно прав для выполнения данного действия', 'danger')
-        return redirect(url_for('index'))
-    if request.method == 'POST':
-        book = db.session.scalar(select(Book).where(Book.id == book_id))
-        if not book:
+@access_guard(current_user, 'administrator')
+def delete(media_id):
+    if request.method == 'GET':
+        media = db.session.scalar(select(Media).where(Media.media_id == media_id))
+        print(123)
+        if not media:
             flash_alert('Такой книги не существует или информация о ней недоступна', 'danger')
             return redirect(url_for('index'))
-        for rev in book.reviews:
-            db.session.delete(rev)
-        db.session.delete(book)
+        # CoverManager.delete(media.cover)
+        db.session.delete(media)
         db.session.commit()
-        CoverManager.delete(book.cover)
+        
         flash_alert('Книга успешно удалена!', 'success')
     return redirect(url_for('index'))

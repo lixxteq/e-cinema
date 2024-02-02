@@ -17,7 +17,7 @@
                     <a href="{{ url_for('index') }}"><img style="height: 50px" src="{{ url_for('static', filename='image/ebook-logo.png') }}" alt="Logo"></a>
                     <a class="btn navbar-brand btn-lg text-white" href="{{ url_for('index') }}">Главная</a>
                     {% if current_user.is_authenticated and current_user.access_level >= access_level_map['administrator'] %}
-                    <a class="btn navbar-brand btn-lg text-white" href="{{ url_for('books.create') }}">Добавить книгу</a>
+                    <a class="btn navbar-brand btn-lg text-white" href="{{ url_for('media.create') }}">Добавить книгу</a>
                     {% endif %}
                 </div>
                 <div class="d-flex">

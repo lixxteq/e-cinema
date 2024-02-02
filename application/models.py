@@ -21,15 +21,7 @@ class MediaSource(Base):
     # prefix: Mapped[str] = mapped_column(String, nullable=False)
     source: Mapped[str] = mapped_column(String(255), nullable=False)
 
-class Cover(Base):
-    __tablename__ = 'covers'
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    mimetype: Mapped[str] = mapped_column(String(15), nullable=False)
-    md5_hash: Mapped[str] = mapped_column(String(32), nullable=False)
-    filename: Mapped[str] = mapped_column(String(50), nullable=False)
-
-    media: Mapped['Media'] = relationship(back_populates='cover')
 
 media_genre_m2m = db.Table(
     'media_genre',
@@ -66,8 +58,8 @@ class Media(Base):
     age_rate: Mapped[int] = mapped_column(Integer, nullable=True)
     publisher: Mapped[str] = mapped_column(String(50), nullable=True)
 
-    cover_id: Mapped[int] = mapped_column(ForeignKey(Cover.id, ondelete='SET NULL', onupdate='CASCADE'), nullable=True)
-    country_id: Mapped[str] = mapped_column(ForeignKey(Country.id, onupdate='CASCADE'), nullable=False)
+    # cover_id: Mapped[int] = mapped_column(ForeignKey(Cover.id, ondelete='SET NULL', onupdate='CASCADE'), nullable=True)
+    country_id: Mapped[str] = mapped_column(ForeignKey(Country.id, ondelete='SET NULL', onupdate='CASCADE'), nullable=True)
 
     rating_summary: Mapped[int] = mapped_column(db.Integer, nullable=False, default=0)
     rating_amount: Mapped[int] = mapped_column(db.Integer, nullable=False, default=0)
@@ -75,7 +67,7 @@ class Media(Base):
     cover: Mapped['Cover'] = relationship(back_populates='media', lazy='subquery')
     country: Mapped['Country'] = relationship(back_populates='media')
     genres: Mapped[List['Genre']] = relationship(secondary=media_genre_m2m, back_populates='media')
-    reviews: Mapped[List['Review']] = relationship(back_populates='media')
+    reviews: Mapped[List['Review']] = relationship(back_populates='media', cascade='all, delete')
 
     def get_rating(self):
         if self.rating_amount == 0:
@@ -85,6 +77,17 @@ class Media(Base):
     # TODO: content path 
     def get_cover_url(self):
         return url_for('static', filename=f'upload/{self.cover.filename}')
+
+class Cover(Base):
+    __tablename__ = 'covers'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    mimetype: Mapped[str] = mapped_column(String(15), nullable=False)
+    md5_hash: Mapped[str] = mapped_column(String(32), nullable=False)
+    filename: Mapped[str] = mapped_column(String(50), nullable=False)
+    media_id: Mapped[int] = mapped_column(ForeignKey(Media.media_id, ondelete='SET NULL', onupdate='CASCADE'), nullable=True) # TODO: cascade delete? not sure
+
+    media: Mapped['Media'] = relationship(back_populates='cover')
 
 class Movie(Base):
     __tablename__ = 'movies'
@@ -167,7 +170,12 @@ class User(Base, UserMixin):
     @property
     def access_level(self):
         return ACCESS_LEVEL_MAP[self.role.name]
-    # TODO: extend
+    
+    # TODO: error check
+    def has_access(self, req_access_level):
+        return self.access_level >= req_access_level
+    
+    # TODO: extend validation
     @validates('email')
     def validate_email(self, key, value):
         if re.match(r'[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*', value):
@@ -187,7 +195,7 @@ class Review(Base):
     __tablename__ = 'reviews'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    media_id: Mapped[int] = mapped_column(ForeignKey(Media.media_id, ondelete='CASCADE'), nullable=False)
+    media_id: Mapped[int] = mapped_column(ForeignKey(Media.media_id, ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey(User.id, ondelete='CASCADE'), nullable=False)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)

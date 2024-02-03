@@ -34,7 +34,7 @@ def login():
                 flash_alert(f'Вы вошли как {user.login}', 'success')
                 return redirect(request.args.get('next') or url_for('index'))
         flash_alert('Невозможно аутентифицироваться с указанными логином и паролем', 'danger')
-    return render_template('login.html')
+    return render_template('auth/login.html')
 
 @controller.route('logout')
 @login_required
@@ -56,6 +56,7 @@ def register():
             user.set_password(password)
     return render_template('register.html')
 
+# developer mode only
 @controller.route('devrg')
 def devrg():
     roles = db.session.scalars(select(Role)).all()

@@ -1,15 +1,16 @@
 {% extends 'base.html' %}
+{% from "_formhelpers.html" import render_field %}
 
 {% block headermeta %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css"> -->
 {% endblock %}
 
 {% block main %}
 <div class="container text-white">
     <h2 class="my-3 text-center text-uppercase font-weight-bold">Добавление новой книги</h2>
 
-    <form action="{{ url_for('books.create') }}" method="POST" enctype="multipart/form-data">
-        <div class="mb-3 row">
+    <form action="{{ url_for('admin.title.add') }}" method="POST" enctype="multipart/form-data">
+        <!-- <div class="mb-3 row">
             <div class="col-md-12 d-flex flex-column">
                 <div class="mb-3">
                     <label for="title">Название книги</label>
@@ -50,17 +51,28 @@
                     <img src="#" class="img-fluid d-none" alt="Cover">
                     <label for="cover_file" class="btn btn-dark">Выбрать обложку</label>
                 </div>
-            </div>
-        </div>
-        <div class="mb-3 text-center">
+            </div> -->
+        <!-- </div> -->
+        {{ form.csrf_token }}
+        <p>{{render_field(form.category)}} </p>
+        <p>{{render_field(form.name)}}</p>
+        <p>{{render_field(form.description)}}</p>
+        <p>{{render_field(form.year)}}</p>
+        <p>{{render_field(form.age_rate)}}</p>
+        <p>{{render_field(form.publisher)}}</p>
+        <p>{{render_field(form.country)}}</p>
+        <p>{{render_field(form.genres)}}</p>
+        <p>{{render_field(form.cover_file)}}</p>
+        <!-- <div class="mb-3 text-center">
             <button type="submit" class="btn btn-primary">Создать книгу</button>
-        </div>
+        </div> -->
+        <p><input type="submit" value="Добавить"></p> 
     </form>
 </div>
 
 {% endblock %}
 
 {% block footermeta %}
-<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
-<script>const easyMDE = new EasyMDE();</script>
+<!-- <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script> -->
+<!-- <script>const easyMDE = new EasyMDE();</script> -->
 {% endblock %}

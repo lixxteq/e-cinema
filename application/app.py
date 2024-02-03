@@ -20,9 +20,12 @@ toolbar = DebugToolbarExtension(app=app)
 from models import Media, User
 from utils import flash_alert
 from controllers.auth import controller as auth_bp, create_login_manager
-from controllers.media import controller as media_bp
+from controllers.title import controller as title_bp
+from controllers.admin.index import controller as admin_bp
+
 app.register_blueprint(auth_bp)
-app.register_blueprint(media_bp)
+app.register_blueprint(title_bp)
+app.register_blueprint(admin_bp)
 create_login_manager(app)
 
 # enforce User type to fix type recognition of current_user variable
@@ -34,10 +37,13 @@ def globals():
         'access_level_map': ACCESS_LEVEL_MAP
     }
 
+@app.errorhandler(404)
+def http_not_found(error):
+    return render_template('not_found.html')
+
 @app.route('/')
 def index():
     page = request.args.get('page', 1, type=int)
     pages = db.session.execute(select(func.count(Media.media_id))).scalar_one()
     media = db.session.scalars(select(Media).order_by(desc(Media.year)).limit(MEDIA_PER_PAGE).offset((page-1) * MEDIA_PER_PAGE)).all()
     return render_template('index.html', media=media, page=page, pages=pages)
-    # return render_template('index.html', page=page)

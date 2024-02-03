@@ -35,7 +35,7 @@ def seq_fetch_one(sequence: Sequence[T], key: str, value) -> T:
     return next(filter(lambda o: getattr(o, key) == value, sequence))
 
 class CoverManager:
-    """Implements methods for working with Cover model: database and filesystem saving and deleting, hashing and duplicate prevention"""
+    """Implements methods for working with Cover model objects"""
     def __init__(self, cover_file: FileStorage):
         self.cover_file = cover_file
 
@@ -96,7 +96,7 @@ def access_guard(current_user, req_access_level):
     def decorator(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
-            if not current_user or not current_user.has_access(ACCESS_LEVEL_MAP[req_access_level]):
+            if not current_user or not current_user.has_access(req_access_level):
                 flash_alert('У вас недостаточно прав для выполнения данного действия', 'danger')
                 return redirect(url_for('index'))
 

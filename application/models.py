@@ -6,7 +6,7 @@ from flask import url_for
 from values import ACCESS_LEVEL_MAP
 from db_factory import Base
 import sqlalchemy as alc
-from sqlalchemy import Integer, String, Text, ForeignKey, DateTime, Enum
+from sqlalchemy import BigInteger, Integer, String, Text, ForeignKey, DateTime, Enum, UUID, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from flask_bcrypt import generate_password_hash, check_password_hash
 from flask_login import UserMixin
@@ -50,7 +50,7 @@ class Country(Base):
 class Media(Base):
     __tablename__ = 'media'
 
-    media_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    media_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, default=func.uuid_short())
     category: Mapped[Category] = mapped_column(Enum(*get_args(Category), name='category', create_constraint=True, validate_strings=True))
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -173,7 +173,7 @@ class User(Base, UserMixin):
     
     # TODO: error check
     def has_access(self, req_access_level):
-        return self.access_level >= req_access_level
+        return self.access_level >= ACCESS_LEVEL_MAP[req_access_level]
     
     # TODO: extend validation
     @validates('email')
@@ -199,7 +199,7 @@ class Review(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey(User.id, ondelete='CASCADE'), nullable=False)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
-    date: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=alc.sql.func.now())
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=alc.sql.func.now())
 
     user: Mapped['User'] = relationship(back_populates='reviews')
     media: Mapped['Media'] = relationship(back_populates='reviews')

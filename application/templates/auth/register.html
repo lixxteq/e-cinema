@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from "_formhelpers.html" import render_field %}
 
 {% block headermeta %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
@@ -7,34 +8,14 @@
 {% block main %}
 <div class="d-flex h-100 flex-grow-1" style="background-image: url('{{ url_for('static', filename='image/lib-bg.jpg')|escape }}'); background-size: cover">
     <form class="container-fluid m-auto bg-white p-5 border round" method="POST" style="max-width: 35rem; --bs-bg-opacity: 0.8;">
-        <div class="form-floating mb-3">
-            <input type="text" class="form-control" name="login" id="login" placeholder="Enter login" value="{{ request.form.login }}" pattern="(?=.*\d)(?=.*[a-zA-Z]).{8,}" required>
-            <label for="login">Login</label>
-        </div>
-
-        <div class="form-floating mb-3">
-            <input type="text" class="form-control" name="display_name" id="display_name" placeholder="Enter display name" value="{{ request.form.display_name }}" pattern="(?=.*\d)(?=.*[a-zA-Z]).{8,}" required>
-            <label for="login">Display name</label>
-        </div>
-
-        <div class="form-floating mb-3">
-            <input type="email" class="form-control" name="email" id="email" placeholder="Enter email" value="{{ request.form.email }}" pattern="[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*" required>
-            <label for="login">Email</label>
-        </div>
+        {{ form.csrf_token }}
+        <p>{{render_field(form.login)}} </p>
+        <p>{{render_field(form.display_name)}}</p>
+        <p>{{render_field(form.email)}}</p>
+        <p>{{render_field(form.password)}}</p>
+        <p>{{render_field(form.repeat_password)}}</p>
     
-        <div class="form-floating mb-3">
-            <input type="password" class="form-control" id="password" name="password" placeholder="Enter password" pattern="((?=\S*?[a-z])(?=\S*?[0-9]).{8,})\S" title="Must contain at least 8 characters, including 1 number and 1 lowercase character.">
-            <label for="password">Password</label>
-            <p>Password must contain at least <span id="validate-chars">8 characters</span>, including <span id="validate-nums">1 number</span> and <span id="validate-lowercase">1 lowercase character</span></p>
-        </div>
-
-        <div class="form-floating mb-3">
-            <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Enter password" pattern="((?=\S*?[a-z])(?=\S*?[0-9]).{8,})\S">
-            <label for="password">Repeat password</label>
-            <p class="d-none" id="confirm-state">Password does not match</p>
-        </div>
-    
-        <button id="signup" type="submit" class="btn btn-secondary w-100" disabled>Sign up</button>
+        <button id="signup" type="submit" class="btn btn-secondary w-100">Sign up</button>
     </form>
 </div>
 {% endblock %}

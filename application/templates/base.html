@@ -37,10 +37,10 @@
         </nav>
     </header>
 
-    <div id="alert-block">
+    <div id="alert-block" class="alert-block">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% for _, msg in messages %}
-        {{msg}}
+            {{msg}}
         {% endfor %}
         {% endwith %}
     </div>

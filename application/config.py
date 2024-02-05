@@ -18,6 +18,7 @@ class DevConfig(Config):
     SQLALCHEMY_ECHO = True
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     TEMPLATES_AUTO_RELOAD = True
+    DEBUG_TB_INTERCEPT_REDIRECTS = False
 
 class ProdConfig(Config):
     DEBUG = False

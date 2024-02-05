@@ -5,7 +5,7 @@ from markupsafe import Markup
 from nh3 import clean
 from sqlalchemy import select
 from werkzeug.datastructures import FileStorage
-from values import ACCESS_LEVEL_MAP
+from values import ACCESS_LEVEL_MAP, ALLOWED_MIME_TYPES, FLASH_DURATION
 from models import Cover, db
 from werkzeug.utils import secure_filename
 from os import path, remove
@@ -19,11 +19,11 @@ def flash_alert(message, category):
     """Inject stylized bootstrap alert HTML in template's alert block"""
     alert = Markup(
         f"""
-    <div class="alert alert-{category} alert-dismissible fade show w-25 position-fixed mt-3 ms-3" role="alert" style="opacity: 0.98; z-index: 10000">
+    <div class="alert alert-{category} alert-dismissible fade show position-sticky w-25 mt-3 ms-3" role="alert" style="opacity: 0.98; z-index: 10000">
       {message}
     </div>
     <script>
-        setTimeout(() => document.getElementById('alert-block').remove(), 5000);
+        setTimeout(() => document.getElementById('alert-block').remove(), {FLASH_DURATION});
     </script>
     """
     )
@@ -55,6 +55,9 @@ class CoverManager:
     def db_save(self):
         db.session.add(Cover(filename=self.filename, mimetype=self.cover_file.mimetype, md5_hash=self.hash))
         db.session.commit()
+    
+    # def fs_delete(self):
+
 
     def find_by_hash(self):
         self.hash = md5(self.cover_file.stream.read()).hexdigest()
@@ -65,8 +68,8 @@ class CoverManager:
     def delete(cover: Cover):
         cover_path = path.join(path.dirname(path.abspath(__file__)), 'static', 'upload', cover.filename)
         remove(cover_path)
-        # db.session.delete(cover)
-        # db.session.commit()
+        db.session.delete(cover)
+        db.session.commit()
 
 class Validator:
     """Implements static methods for validating and formatting user form-data input"""
@@ -91,6 +94,10 @@ class Validator:
             return None
         return form_email
     
+    @staticmethod
+    def validate_cover(form_cover_file: FileStorage):
+        return True if form_cover_file.mimetype in ALLOWED_MIME_TYPES else False
+    
 def access_guard(current_user, req_access_level):
     """Access level guard decorator. Responses with error if authenticated user has no access to specified endpoint"""
     def decorator(f):
@@ -103,3 +110,9 @@ def access_guard(current_user, req_access_level):
             return f(*args, **kwargs)
         return wrapped
     return decorator
+
+def flash_errors(form):
+    """Directs WTForms errors to flash_alert"""
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash_alert(f'{getattr(form, field).label.text}: {error}', 'danger')

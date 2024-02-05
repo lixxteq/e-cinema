@@ -1,8 +1,10 @@
+from crypt import methods
+from forms import LoginForm, RegisterForm
 from models import Role, db, User
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import LoginManager, login_user, logout_user, login_required
 from sqlalchemy import select, insert
-from utils import flash_alert, seq_fetch_one
+from utils import access_guard, flash_alert, flash_errors, seq_fetch_one
 from flask_bcrypt import generate_password_hash
 from app import current_user
 
@@ -10,7 +12,6 @@ controller = Blueprint('auth', __name__, url_prefix='/auth')
 
 def load_user(user_id):
     return db.session.scalar(select(User).where(User.id == user_id))
-    # return User.query.get(user_id)
 
 def create_login_manager(app):
     login_manager = LoginManager()
@@ -23,18 +24,18 @@ def create_login_manager(app):
 
 @controller.route('login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    form = LoginForm()
     if request.method == 'POST':
-        login = request.form.get('login')
-        password = request.form.get('password')
-        remember_me = request.form.get('remember_me', type=bool)
-        if login and password:
-            user = db.session.scalar(select(User).filter_by(login=login))
-            if user and user.check_password(password):
-                login_user(user, remember=bool(remember_me))
-                flash_alert(f'Вы вошли как {user.login}', 'success')
+        if form.validate_on_submit():
+            user = db.session.scalar(select(User).where((User.login == form.login.data)|(User.email == form.login.data)))
+            if user and user.check_password(form.password.data):
+                login_user(user, remember=form.remember_me.data)
+                flash_alert(f'Logged in as {user.display_name}', 'success')
                 return redirect(request.args.get('next') or url_for('index'))
-        flash_alert('Невозможно аутентифицироваться с указанными логином и паролем', 'danger')
-    return render_template('auth/login.html')
+        flash_alert('Incorrect login or password', 'danger')
+    return render_template('auth/login.html', form=form)
 
 @controller.route('logout')
 @login_required
@@ -42,22 +43,27 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
-@controller.route('register')
+@controller.route('register', methods=['GET', 'POST'])
 def register():
+    form = RegisterForm()
     if current_user.is_authenticated:
         return redirect(url_for('index'))
     if request.method == 'POST':
-        login = request.form.get('login')
-        password = request.form.get('password')
-        password_confirm = request.form.get('confirm_password')
-        email = request.form.get('email')
-        if login and password and email and password == password_confirm:
-            user = User(login = login, )
-            user.set_password(password)
-    return render_template('register.html')
+        if not form.validate_on_submit() or not form.password.data == form.repeat_password.data:
+            flash_errors(form)
+            return redirect(url_for('auth.register'))
+        # TODO: email validation
+        user = User(login = form.login.data, display_name = form.display_name.data, email = form.email.data)
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.commit()
+        flash_alert('Регистрация пройдена', 'success')
+        return redirect(url_for('index'))
+    return render_template('auth/register.html', form=form)
 
 # developer mode only
 @controller.route('devrg')
+@access_guard(current_user, 'administrator')
 def devrg():
     roles = db.session.scalars(select(Role)).all()
     user1 = User(
@@ -91,8 +97,3 @@ def devrg():
     db.session.add_all([user1, user2, user3])
     db.session.commit()
     return redirect(url_for('auth.login'))
-
-# @controller.route('create')
-# @login_required
-# def create():
-#     return render_template()

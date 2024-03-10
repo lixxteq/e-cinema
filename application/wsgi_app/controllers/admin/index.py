@@ -11,7 +11,9 @@ from app import current_user
 
 controller = Blueprint('admin', __name__, url_prefix='/admin')
 from controllers.admin.title import controller as admin_title_bp
+from controllers.admin.service import controller as service_bp
 controller.register_blueprint(admin_title_bp)
+controller.register_blueprint(service_bp)
 
 @controller.route('/')
 def index():

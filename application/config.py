@@ -10,7 +10,7 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI = BASE_URL % (getenv('MYSQL_USER'), getenv('MYSQL_PASSWORD'), getenv('MYSQL_HOST'), DB_NAME)
     ENGINE_URI = BASE_URL % (getenv('MYSQL_USER'), getenv('MYSQL_PASSWORD'), getenv('MYSQL_HOST'), '')
     UPLOAD_FOLDER = path.join(path.dirname(path.abspath(__file__)), 'upload')
-
+    POOL_WORKERS = 5
 
 class DevConfig(Config):
     DEBUG = True
@@ -19,6 +19,12 @@ class DevConfig(Config):
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     TEMPLATES_AUTO_RELOAD = True
     DEBUG_TB_INTERCEPT_REDIRECTS = False
+    SERVICE_HOST = 'http://127.0.0.1:%s'
+    SERVICE_PORT = 39016
+    SERVICE_URI = SERVICE_HOST % SERVICE_PORT
 
 class ProdConfig(Config):
     DEBUG = False
+    APP_PORT = 39015
+    SERVICE_HOST = 'http://media_worker:%s'
+    SERVICE_URI = SERVICE_HOST % APP_PORT

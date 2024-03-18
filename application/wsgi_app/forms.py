@@ -5,9 +5,9 @@ from wtforms import EmailField, PasswordField, StringField, TextAreaField, Integ
 from wtforms.validators import InputRequired, Length, NumberRange, Optional, Regexp, Email
 from wtforms_sqlalchemy.orm import QuerySelectMultipleField, QuerySelectField
 from datetime import datetime
-from values import ALLOWED_MIME_TYPES
-from models import Genre, Country
-from app import db
+from .values import ALLOWED_MIME_TYPES
+from .models import Genre, Country
+from .app import db
 
 def query_genres():
     return db.session.scalars(select(Genre))

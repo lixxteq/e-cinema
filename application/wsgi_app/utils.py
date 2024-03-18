@@ -5,8 +5,8 @@ from markupsafe import Markup
 from nh3 import clean
 from sqlalchemy import select
 from werkzeug.datastructures import FileStorage
-from values import ACCESS_LEVEL_MAP, ALLOWED_MIME_TYPES, FLASH_DURATION
-from models import Cover, db
+from .values import ACCESS_LEVEL_MAP, ALLOWED_MIME_TYPES, FLASH_DURATION
+from .models import Cover, db
 from werkzeug.utils import secure_filename
 from os import path, remove
 from flask_login import AnonymousUserMixin, current_user
@@ -103,7 +103,7 @@ def access_guard(current_user, req_access_level):
     def decorator(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
-            if not current_user or not current_user.has_access(req_access_level):
+            if not current_user or current_user.is_anonymous or not current_user.has_access(req_access_level):
                 flash_alert('У вас недостаточно прав для выполнения данного действия', 'danger')
                 return redirect(url_for('index'))
 

@@ -1,11 +1,11 @@
-from utils import CoverManager, Validator, flash_alert, access_guard
-from models import Genre, db, User, Media, Cover, Review
+from ..utils import CoverManager, Validator, flash_alert, access_guard
+from ..models import Genre, db, User, Media, Cover, Review
 from flask import Blueprint, render_template, redirect, url_for, request, abort
 from flask_login import login_required
 from sqlalchemy import select
 from nh3 import clean
 from markdown import markdown
-from app import current_user
+from ..app import current_user
 
 controller = Blueprint('title', __name__, url_prefix='/title')
 

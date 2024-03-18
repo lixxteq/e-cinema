@@ -1,12 +1,12 @@
 from crypt import methods
-from forms import LoginForm, RegisterForm
-from models import Role, db, User
+from ..forms import LoginForm, RegisterForm
+from ..models import Role, db, User
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import LoginManager, login_user, logout_user, login_required
 from sqlalchemy import select, insert
-from utils import access_guard, flash_alert, flash_errors, seq_fetch_one
+from ..utils import access_guard, flash_alert, flash_errors, seq_fetch_one
 from flask_bcrypt import generate_password_hash
-from app import current_user
+from ..app import current_user
 
 controller = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -27,13 +27,13 @@ def login():
         return redirect(url_for('index'))
     form = LoginForm()
     if request.method == 'POST':
-        if form.validate_on_submit():
+        # if form.validate_on_submit():
             user = db.session.scalar(select(User).where((User.login == form.login.data)|(User.email == form.login.data)))
             if user and user.check_password(form.password.data):
                 login_user(user, remember=form.remember_me.data)
                 flash_alert(f'Logged in as {user.display_name}', 'success')
                 return redirect(request.args.get('next') or url_for('index'))
-        flash_alert('Incorrect login or password', 'danger')
+            else: flash_alert('Incorrect login or password', 'danger')
     return render_template('auth/login.html', form=form)
 
 @controller.route('logout')
@@ -62,7 +62,7 @@ def register():
 
 # developer mode only
 @controller.route('devrg')
-@access_guard(current_user, 'administrator')
+# @access_guard(current_user, 'administrator')
 def devrg():
     roles = db.session.scalars(select(Role)).all()
     user1 = User(
@@ -71,6 +71,7 @@ def devrg():
         email = 'qwerty1@domain.com',
         display_name = 'display1',
         role = seq_fetch_one(roles, 'name', 'visitor'),
+        # role = [x for x in roles if x.name == 'visitor'][0]
         # role_id = 1
     )
     user2 = User(
@@ -80,6 +81,7 @@ def devrg():
         display_name = 'display2',
         # role = next(filter(lambda x: x.name == 'moderator', roles)),
         role = seq_fetch_one(roles, 'name', 'moderator')
+        # role = [x for x in roles if x.name == 'moderator'][0]
         # roles.
         # role_id = 2
     )
@@ -90,6 +92,7 @@ def devrg():
         display_name = 'display3',
         # role = next(filter(lambda x: x.name == 'administrator', rdict)),
         role = seq_fetch_one(roles, 'name', 'administrator')
+        # role = [x for x in roles if x.name == 'administrator'][0]
         # role_id = 3d
     )
 

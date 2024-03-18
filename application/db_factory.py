@@ -2,7 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData, create_engine, text
 from sqlalchemy.orm import declarative_base
-from config import Config
+from .config import Config
 from flask_migrate import Migrate
 
 Base = declarative_base(

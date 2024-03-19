@@ -3,13 +3,14 @@ import re
 from typing import List, Literal, get_args
 from functools import reduce
 from flask import url_for
+
+from .types import AuthenticatedUser
 from .values import ACCESS_LEVEL_MAP
 from ..db_factory import Base
 import sqlalchemy as alc
 from sqlalchemy import BigInteger, Integer, String, Text, ForeignKey, DateTime, Enum, UUID, func, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from flask_bcrypt import generate_password_hash, check_password_hash
-from flask_login import UserMixin
 from .app import db
 
 Category = Literal['movie', 'show']
@@ -148,7 +149,7 @@ class Role(Base):
 
     # users: Mapped[List['User']] = relationship(back_populates='role')
 
-class User(Base, UserMixin):
+class User(Base, AuthenticatedUser):
     __tablename__ = 'users'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -175,6 +176,9 @@ class User(Base, UserMixin):
     # TODO: error check
     def has_access(self, req_access_level):
         return self.access_level >= ACCESS_LEVEL_MAP[req_access_level]
+    
+    def get_id(self):
+        return self.id
     
     # TODO: extend validation
     @validates('email')

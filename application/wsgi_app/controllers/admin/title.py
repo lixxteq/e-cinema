@@ -1,18 +1,18 @@
 from ...utils import CoverManager, Validator, flash_alert, access_guard, flash_errors
 from ...models import Genre, db, User, Media, Cover, Review
 from flask import Blueprint, render_template, redirect, url_for, request, abort
-from flask_login import login_required
 from sqlalchemy import select
 from ...values import ACCESS_LEVEL_MAP
 from nh3 import clean
 from markdown import markdown
 from ...app import current_user
 from ...forms import TitleAddForm, TitleEditForm
+from flask_jwt_extended import jwt_required
 
 controller = Blueprint('title', __name__, url_prefix='/title')
 
 @controller.route('<int:media_id>')
-@login_required
+@jwt_required()
 @access_guard(current_user, 'moderator')
 def view(media_id):
     media = db.session.scalar(select(Media).where(Media.media_id == media_id))
@@ -22,7 +22,7 @@ def view(media_id):
     return render_template('admin/title.html', media=media, cover_url=cover_url)
 
 @controller.route('add', methods=['GET', 'POST'])
-@login_required
+@jwt_required()
 @access_guard(current_user, 'administrator')
 def add():
     form = TitleAddForm()
@@ -45,7 +45,7 @@ def add():
     return redirect(url_for('index'))
 
 @controller.route('<int:media_id>/edit', methods=['GET', 'POST'])
-@login_required
+@jwt_required()
 @access_guard(current_user, 'administrator')
 def edit(media_id):
     form = TitleEditForm()
@@ -71,7 +71,7 @@ def edit(media_id):
     return redirect(url_for('admin.title.view', media_id=media_id))
 
 @controller.route('<int:media_id>/delete', methods=['POST'])
-@login_required
+@jwt_required()
 @access_guard(current_user, 'administrator')
 def delete(media_id):
     if request.method == 'POST':

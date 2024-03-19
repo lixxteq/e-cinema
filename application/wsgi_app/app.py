@@ -1,8 +1,7 @@
-from asgiref.wsgi import WsgiToAsgi
-# from a2wsgi import WSGIMiddleware
-from fastapi.middleware.wsgi import WSGIMiddleware
 
-from flask import Flask, g, render_template, request, session
+
+from flask import Flask, g, redirect, render_template, request, session, url_for
+from flask_jwt_extended import jwt_required, verify_jwt_in_request
 from flask_login import current_user, login_required # type: ignore
 from dotenv import load_dotenv
 from os import getenv
@@ -33,7 +32,7 @@ toolbar = DebugToolbarExtension(app=app)
 
 from .models import Media, User
 from .utils import flash_alert
-from .controllers.auth import controller as auth_bp, create_login_manager
+from .controllers.auth import controller as auth_bp
 from .controllers.title import controller as title_bp
 from .controllers.admin.index import controller as admin_bp
 from .controllers.watch import controller as watch_bp
@@ -42,10 +41,6 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(title_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(watch_bp)
-create_login_manager(app)
-
-# enforce User type to fix type recognition of current_user variable
-current_user: User = current_user
 
 @app.context_processor
 def globals(): 
@@ -57,7 +52,17 @@ def globals():
 def http_not_found(error):
     return render_template('not_found.html')
 
+@app.errorhandler(401)
+def unauthorized(error):
+    flash_alert('Your authentication has expired, please log in again', 'danger')
+    return redirect(url_for('auth.login'))
+
+@app.before_request
+def verify_jwt():
+    verify_jwt_in_request(optional=True)
+
 @app.route('/')
+# @jwt_required(optional=True)
 def index():
     page = request.args.get('page', 1, type=int)
     pages = db.session.execute(select(func.count(Media.media_id))).scalar_one()

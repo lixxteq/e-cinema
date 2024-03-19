@@ -1,6 +1,7 @@
 .venv
-.env
+*.env
 __pycache__
 .vscode
 
 draft.*
+*._deprecated

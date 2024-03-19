@@ -9,7 +9,6 @@ from .values import ACCESS_LEVEL_MAP, ALLOWED_MIME_TYPES, FLASH_DURATION
 from .models import Cover, db
 from werkzeug.utils import secure_filename
 from os import path, remove
-from flask_login import AnonymousUserMixin, current_user
 from typing import Sequence, TypeVar
 from sqlalchemy.engine.result import _RowData
 from functools import wraps
@@ -97,6 +96,7 @@ class Validator:
     @staticmethod
     def validate_cover(form_cover_file: FileStorage):
         return True if form_cover_file.mimetype in ALLOWED_MIME_TYPES else False
+
     
 def access_guard(current_user, req_access_level):
     """Access level guard decorator. Responses with error if authenticated user has no access to specified endpoint"""

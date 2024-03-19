@@ -1,51 +1,67 @@
-from crypt import methods
+from typing import Any
 from ..forms import LoginForm, RegisterForm
 from ..models import Role, db, User
-from flask import Blueprint, render_template, redirect, url_for, request
-from flask_login import LoginManager, login_user, logout_user, login_required
+from flask import Blueprint, g, make_response, render_template, redirect, url_for, request
+# from flask_login import LoginManager, login_user, logout_user, jwt_required
 from sqlalchemy import select, insert
 from ..utils import access_guard, flash_alert, flash_errors, seq_fetch_one
+from ..types import AnonymousUser
 from flask_bcrypt import generate_password_hash
-from ..app import current_user
+from ..app import app
+import flask_jwt_extended as rewrite
+from flask_jwt_extended import JWTManager, create_access_token, current_user, jwt_required, set_access_cookies, unset_jwt_cookies
+
+def _get_current_user() -> User | None:
+    jwt_user_dict = g.get("_jwt_extended_jwt_user", None)
+    return jwt_user_dict["loaded_user"] if jwt_user_dict else None
+rewrite.utils.get_current_user = _get_current_user
+
+# enforce User type on user proxy for type hinting
+current_user: User = current_user
+
+jwtm = JWTManager(app, add_context_processor=True)
+
+@jwtm.user_identity_loader
+def user_identity_handler(user: User):
+    return user.id
+
+@jwtm.user_lookup_loader
+def user_lookup_handler(jwt_header, jwt_data):
+    identity = jwt_data["sub"]
+    t = db.session.scalars(select(User).where(User.id == identity)).one_or_none()
+    print(t)
+    return t
 
 controller = Blueprint('auth', __name__, url_prefix='/auth')
 
-def load_user(user_id):
-    return db.session.scalar(select(User).where(User.id == user_id))
-
-def create_login_manager(app):
-    login_manager = LoginManager()
-    login_manager.login_view = 'auth.login' # type: ignore
-    login_manager.login_message = 'Пройдите аутентификацию для доступа к странице.'
-    login_manager.login_message_category = 'warning'
-    login_manager.user_loader(load_user)
-    login_manager.init_app(app)
-
 @controller.route('login', methods=['GET', 'POST'])
 def login():
-    if current_user.is_authenticated:
+    if current_user:
         return redirect(url_for('index'))
     form = LoginForm()
     if request.method == 'POST':
-        # if form.validate_on_submit():
+        if form.validate_on_submit():
             user = db.session.scalar(select(User).where((User.login == form.login.data)|(User.email == form.login.data)))
             if user and user.check_password(form.password.data):
-                login_user(user, remember=form.remember_me.data)
+                resp = make_response(redirect(request.args.get('next') or url_for('index')))
+                access_token = create_access_token(identity=user)
+                set_access_cookies(response=resp, encoded_access_token=access_token)
                 flash_alert(f'Logged in as {user.display_name}', 'success')
-                return redirect(request.args.get('next') or url_for('index'))
-            else: flash_alert('Incorrect login or password', 'danger')
+                return resp
+        flash_alert('Incorrect login or password', 'danger')
     return render_template('auth/login.html', form=form)
 
 @controller.route('logout')
-@login_required
 def logout():
-    logout_user()
-    return redirect(url_for('index'))
+    resp = make_response(redirect(url_for('index')))
+    unset_jwt_cookies(resp)
+    # TODO: clear context?
+    return resp
 
 @controller.route('register', methods=['GET', 'POST'])
 def register():
     form = RegisterForm()
-    if current_user.is_authenticated:
+    if current_user:
         return redirect(url_for('index'))
     if request.method == 'POST':
         if not form.validate_on_submit() or not form.password.data == form.repeat_password.data:

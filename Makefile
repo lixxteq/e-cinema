@@ -2,9 +2,10 @@ APP_PORT=39015
 SERVICE_PORT=39016
 
 app:
-	gunicorn -c "python:application.wsgi_app._gunicorn" application.wsgi_app.app:app
+	gunicorn -c "python:application.wsgi_app._gunicorn"
 service:
-	uvicorn application.hls_service.main:app --reload --host 0.0.0.0 --port $(SERVICE_PORT)
+	uvicorn application.hls_service.main:app --reload --host 127.0.0.1 --port $(SERVICE_PORT)
+	# python application/hls_service/_uvicorn.py
 rund:
 	docker-compose up -d
 stopd:

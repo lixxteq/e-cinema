@@ -8,13 +8,12 @@ from os import getenv
 from sqlalchemy import select, desc, func, text
 from .values import ACCESS_LEVEL_MAP, MEDIA_PER_PAGE
 from flask_debugtoolbar import DebugToolbarExtension
-from ..config import DevConfig, ProdConfig
+from .config import DevConfig, ProdConfig
 import pathlib
-import sys
 
 # _parentdir = pathlib.Path(__file__).parent.parent.resolve()
 # sys.path.insert(0, str(_parentdir))
-from ..db_factory import Database
+from ..db_factory import FlaskDatabase
 # sys.path.remove(str(_parentdir))
 
 load_dotenv()
@@ -26,11 +25,13 @@ app.config.from_object(DevConfig if getenv('FLASK_ENV') == 'development' else Pr
 if app.config['ENV'] == 'development': 
     print(app.config)
 
-db = Database(app=app)
+db = FlaskDatabase(app=app)
 migrate = db.init_migrate()
 toolbar = DebugToolbarExtension(app=app)
 
-from .models import Media, User
+from ..models import Media, User
+db.init_schema()
+
 from .utils import flash_alert
 from .controllers.auth import controller as auth_bp
 from .controllers.title import controller as title_bp
@@ -58,7 +59,7 @@ def unauthorized(error):
     return redirect(url_for('auth.login'))
 
 @app.before_request
-def verify_jwt():
+def before_h():
     verify_jwt_in_request(optional=True)
 
 @app.route('/')

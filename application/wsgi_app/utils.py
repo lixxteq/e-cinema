@@ -6,12 +6,13 @@ from nh3 import clean
 from sqlalchemy import select
 from werkzeug.datastructures import FileStorage
 from .values import ACCESS_LEVEL_MAP, ALLOWED_MIME_TYPES, FLASH_DURATION
-from .models import Cover, db
+from ..models import Cover
 from werkzeug.utils import secure_filename
 from os import path, remove
 from typing import Sequence, TypeVar
 from sqlalchemy.engine.result import _RowData
 from functools import wraps
+from .app import db
 T = TypeVar('T', bound=_RowData)
 
 def flash_alert(message, category):

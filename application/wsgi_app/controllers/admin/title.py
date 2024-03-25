@@ -1,11 +1,11 @@
 from ...utils import CoverManager, Validator, flash_alert, access_guard, flash_errors
-from ...models import Genre, db, User, Media, Cover, Review
+from ....models import Genre, User, Media, Cover, Review
 from flask import Blueprint, render_template, redirect, url_for, request, abort
 from sqlalchemy import select
 from ...values import ACCESS_LEVEL_MAP
 from nh3 import clean
 from markdown import markdown
-from ...app import current_user
+from ...app import current_user, db
 from ...forms import TitleAddForm, TitleEditForm
 from flask_jwt_extended import jwt_required
 

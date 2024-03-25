@@ -4,14 +4,14 @@ from typing import List, Literal, get_args
 from functools import reduce
 from flask import url_for
 
-from .types import AuthenticatedUser
-from .values import ACCESS_LEVEL_MAP
-from ..db_factory import Base
+from .wsgi_app.types import AuthenticatedUser
+from .wsgi_app.values import ACCESS_LEVEL_MAP
+from .db_factory import Base
 import sqlalchemy as alc
-from sqlalchemy import BigInteger, Integer, String, Text, ForeignKey, DateTime, Enum, UUID, func, select
+from sqlalchemy import BigInteger, Integer, String, Text, ForeignKey, DateTime, Enum, UUID, func, select, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from flask_bcrypt import generate_password_hash, check_password_hash
-from .app import db
+# from .app import db
 
 Category = Literal['movie', 'show']
 
@@ -22,7 +22,7 @@ class MediaSource(Base):
     # prefix: Mapped[str] = mapped_column(String, nullable=False)
     source: Mapped[str] = mapped_column(String(255), nullable=False)
 
-media_genre_m2m = db.Table(
+media_genre_m2m = Table(
     'media_genre',
     Base.metadata,
     alc.Column('media_id', ForeignKey('media.media_id', ondelete='CASCADE'), primary_key=True),
@@ -60,8 +60,8 @@ class Media(Base):
     # cover_id: Mapped[int] = mapped_column(ForeignKey(Cover.id, ondelete='SET NULL', onupdate='CASCADE'), nullable=True)
     country_id: Mapped[str] = mapped_column(ForeignKey(Country.id, ondelete='SET NULL', onupdate='CASCADE'), nullable=True)
 
-    rating_summary: Mapped[int] = mapped_column(db.Integer, nullable=False, default=0)
-    rating_amount: Mapped[int] = mapped_column(db.Integer, nullable=False, default=0)
+    rating_summary: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    rating_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     cover: Mapped['Cover'] = relationship(back_populates='media', lazy='subquery')
     country: Mapped['Country'] = relationship(back_populates='media')
@@ -163,6 +163,9 @@ class User(Base, AuthenticatedUser):
     role_id: Mapped[int] = mapped_column(ForeignKey(Role.id), nullable=False, default=select(Role.id).where(Role.name == 'visitor'))
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=alc.sql.func.now())
 
+    def __repr__(self):
+        return '<User %s %s %s>' % (self.id, self.login, self.display_name)
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password).decode()
 
@@ -208,5 +211,3 @@ class Review(Base):
 
     user: Mapped['User'] = relationship(back_populates='reviews')
     media: Mapped['Media'] = relationship(back_populates='reviews')
-
-db.init_schema()

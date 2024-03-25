@@ -1,13 +1,13 @@
 from typing import Any
 from ..forms import LoginForm, RegisterForm
-from ..models import Role, db, User
+from ...models import Role, User
 from flask import Blueprint, g, make_response, render_template, redirect, url_for, request
 # from flask_login import LoginManager, login_user, logout_user, jwt_required
 from sqlalchemy import select, insert
 from ..utils import access_guard, flash_alert, flash_errors, seq_fetch_one
 from ..types import AnonymousUser
 from flask_bcrypt import generate_password_hash
-from ..app import app
+from ..app import app, db
 import flask_jwt_extended as rewrite
 from flask_jwt_extended import JWTManager, create_access_token, current_user, jwt_required, set_access_cookies, unset_jwt_cookies
 
@@ -23,7 +23,7 @@ jwtm = JWTManager(app, add_context_processor=True)
 
 @jwtm.user_identity_loader
 def user_identity_handler(user: User):
-    return user.id
+    return user.id.__str__()
 
 @jwtm.user_lookup_loader
 def user_lookup_handler(jwt_header, jwt_data):

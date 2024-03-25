@@ -1,9 +1,10 @@
-from quart import Blueprint, current_app, request
+# from quart import Blueprint, current_app, request
 # from flask_cors import cross_origin
+from fastapi import APIRouter
 import requests
 import threading
 
-controller = Blueprint('service', __name__)
+router = APIRouter(prefix='service', tags=['upload'])
 
 # @controller.route('/upload/<string:composite_id>', methods=['POST'])
 # # @cross_origin(origins='*')
@@ -46,12 +47,12 @@ controller = Blueprint('service', __name__)
 def get_file_extension(file_name: str) -> str:
     return file_name.rsplit('.', 1)[-1]
 
-@controller.route('/upload/<string:composite_id>', methods=['POST'])
+@router.post('/upload/<string:composite_id>')
 async def upload_file(composite_id):
     # x = await request.get_data(cache=False)
-    async for d in request.body.__aiter__():
-        print('c')
-        request.body._data.clear()
+    # async for d in request.body.__aiter__():
+        # print('c')
+        # request.body._data.clear()
 
     # with open(f'{composite_id}', 'wb') as f:
     #     f.write(x)

@@ -32,6 +32,11 @@ def user_lookup_handler(jwt_header, jwt_data):
     print(t)
     return t
 
+@jwtm.unauthorized_loader
+def unauthorized_handler(exc: str):
+    flash_alert(exc, category='danger')
+    return redirect(url_for('auth.login'))
+
 controller = Blueprint('auth', __name__, url_prefix='/auth')
 
 @controller.route('login', methods=['GET', 'POST'])

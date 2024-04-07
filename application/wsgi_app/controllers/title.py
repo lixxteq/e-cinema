@@ -5,7 +5,8 @@ from flask import Blueprint, render_template, redirect, url_for, request, abort
 from sqlalchemy import select
 from nh3 import clean
 from markdown import markdown
-from ..app import current_user, db
+from ..app import db
+from flask_jwt_extended import current_user
 
 controller = Blueprint('title', __name__, url_prefix='/title')
 

@@ -5,9 +5,9 @@ from sqlalchemy import select
 from ...values import ACCESS_LEVEL_MAP
 from nh3 import clean
 from markdown import markdown
-from ...app import current_user, db
+from ...app import db
 from ...forms import TitleAddForm, TitleEditForm
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, current_user
 
 controller = Blueprint('title', __name__, url_prefix='/title')
 

@@ -1,8 +1,6 @@
-
-
 from flask import Flask, g, redirect, render_template, request, session, url_for
 from flask_jwt_extended import jwt_required, verify_jwt_in_request
-from flask_login import current_user, login_required # type: ignore
+# from flask_login import current_user, login_required # type: ignore
 from dotenv import load_dotenv
 from os import getenv
 from sqlalchemy import select, desc, func, text
@@ -63,7 +61,7 @@ def before_h():
     verify_jwt_in_request(optional=True)
 
 @app.route('/')
-# @jwt_required(optional=True)
+# @jwt_required(optional=False)
 def index():
     page = request.args.get('page', 1, type=int)
     pages = db.session.execute(select(func.count(Media.media_id))).scalar_one()

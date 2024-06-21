@@ -3,14 +3,15 @@ import re
 from typing import List, Literal, get_args
 from functools import reduce
 from flask import url_for
-from values import ACCESS_LEVEL_MAP
-from db_factory import Base
+
+from .wsgi_app.types import AuthenticatedUser
+from .wsgi_app.values import ACCESS_LEVEL_MAP
+from .db_factory import Base
 import sqlalchemy as alc
-from sqlalchemy import Integer, String, Text, ForeignKey, DateTime, Enum
+from sqlalchemy import BigInteger, Integer, String, Text, ForeignKey, DateTime, Enum, UUID, func, select, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from flask_bcrypt import generate_password_hash, check_password_hash
-from flask_login import UserMixin
-from app import db
+# from .app import db
 
 Category = Literal['movie', 'show']
 
@@ -21,9 +22,7 @@ class MediaSource(Base):
     # prefix: Mapped[str] = mapped_column(String, nullable=False)
     source: Mapped[str] = mapped_column(String(255), nullable=False)
 
-
-
-media_genre_m2m = db.Table(
+media_genre_m2m = Table(
     'media_genre',
     Base.metadata,
     alc.Column('media_id', ForeignKey('media.media_id', ondelete='CASCADE'), primary_key=True),
@@ -50,19 +49,19 @@ class Country(Base):
 class Media(Base):
     __tablename__ = 'media'
 
-    media_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    media_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False, default=func.uuid_short())
     category: Mapped[Category] = mapped_column(Enum(*get_args(Category), name='category', create_constraint=True, validate_strings=True))
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     year: Mapped[int] = mapped_column(Integer, nullable=False)
-    age_rate: Mapped[int] = mapped_column(Integer, nullable=True)
+    age_rate: Mapped[int] = mapped_column(Integer, nullable=False)
     publisher: Mapped[str] = mapped_column(String(50), nullable=True)
 
     # cover_id: Mapped[int] = mapped_column(ForeignKey(Cover.id, ondelete='SET NULL', onupdate='CASCADE'), nullable=True)
     country_id: Mapped[str] = mapped_column(ForeignKey(Country.id, ondelete='SET NULL', onupdate='CASCADE'), nullable=True)
 
-    rating_summary: Mapped[int] = mapped_column(db.Integer, nullable=False, default=0)
-    rating_amount: Mapped[int] = mapped_column(db.Integer, nullable=False, default=0)
+    rating_summary: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    rating_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     cover: Mapped['Cover'] = relationship(back_populates='media', lazy='subquery')
     country: Mapped['Country'] = relationship(back_populates='media')
@@ -77,6 +76,9 @@ class Media(Base):
     # TODO: content path 
     def get_cover_url(self):
         return url_for('static', filename=f'upload/{self.cover.filename}')
+    
+    def __repr__(self):
+        return '<Media [%s %s]>' % (self.media_id, self.name)
 
 class Cover(Base):
     __tablename__ = 'covers'
@@ -147,7 +149,7 @@ class Role(Base):
 
     # users: Mapped[List['User']] = relationship(back_populates='role')
 
-class User(Base, UserMixin):
+class User(Base, AuthenticatedUser):
     __tablename__ = 'users'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -158,8 +160,11 @@ class User(Base, UserMixin):
     # last_name: Mapped[str] = mapped_column(String(40), nullable=False)
     # first_name: Mapped[str] = mapped_column(String(40), nullable=False)
     # middle_name: Mapped[Optional[str]] = mapped_column(String(40))
-    role_id: Mapped[int] = mapped_column(ForeignKey(Role.id), nullable=False)
+    role_id: Mapped[int] = mapped_column(ForeignKey(Role.id), nullable=False, default=select(Role.id).where(Role.name == 'visitor'))
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=alc.sql.func.now())
+
+    def __repr__(self):
+        return '<User %s %s %s>' % (self.id, self.login, self.display_name)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password).decode()
@@ -173,7 +178,10 @@ class User(Base, UserMixin):
     
     # TODO: error check
     def has_access(self, req_access_level):
-        return self.access_level >= req_access_level
+        return self.access_level >= ACCESS_LEVEL_MAP[req_access_level]
+    
+    def get_id(self):
+        return self.id
     
     # TODO: extend validation
     @validates('email')
@@ -199,9 +207,7 @@ class Review(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey(User.id, ondelete='CASCADE'), nullable=False)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
-    date: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=alc.sql.func.now())
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=alc.sql.func.now())
 
     user: Mapped['User'] = relationship(back_populates='reviews')
     media: Mapped['Media'] = relationship(back_populates='reviews')
-
-db.init_schema()

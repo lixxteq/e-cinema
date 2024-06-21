@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block headermeta %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+{% endblock %}
+
+{% block main %}
+<div class="container" style="background-color: rgba(208, 212, 216, 0.8);">
+
+    <h2 class="my-3 text-center text-uppercase font-weight-bold">Информация</h2>
+
+    <div class="info_row d-flex justify-content-center gap-5">
+        <div class="name-col flex-column">
+            <h4>{{ media.name }}</h4>
+        </div>
+        <div class="year-col flex-column">
+            <p>Год выпуска</p>
+            <h4>{{ media.year }}</h4>
+        </div>
+        {% if media.publisher %}
+        <div class="pub-col flex-column">
+            <p>Студия</p>
+            <h4>{{ media.publisher }}</h4>
+        </div>
+        {% endif %}
+        {% if media.age_rate %}
+        <div class="year-col flex-column">
+            <p>Возраст</p>
+            <h4>{{ media.age_rate }}</h4>
+        </div>
+        {% endif %}
+        {% if media.country %}
+        <div class="year-col flex-column">
+            <p>Страна</p>
+            <h4>{{ media.country.name }}</h4>
+        </div>
+        {% endif %}
+    </div>
+    <div class="info_row d-flex justify-content-center gap-5 mt-5">
+        <div class="cover-col col-5 flex-column">
+            <img src="{{ cover_url }}" alt="Cover" class="border rounded-2" style="max-width:100%;object-fit:cover">
+        </div>
+        <div class="desc-col col-5 flex-column">
+            <h4>Описание</h4>
+            {{ description|safe }}
+        </div>
+    </div>
+    <div class="info_row d-flex justify-content-center align-items-center gap-3 text-center mt-3">
+        <div class="d-flex genres-row flex-row gap-3 mt-3 col-5 flex-wrap">
+            <h4>Жанры: </h4>
+            {% for g in media.genres %}
+            <div class="bg-dark p-2 text-white border rounded-2">{{ g.name }}</div>
+            {% endfor %}
+        </div>
+        <div class="rating-row d-flex flex-column col-5">
+            <h4>Рейтинг: {{ media.get_rating() }}/5 &#9733; (всего отзывов: {{ media.rating_amount }})</h4>
+        </div>
+    </div>
+    <div class="justify-content-end d-flex mb-3 gap-2">
+        {% if current_user.is_authenticated %}
+        {% if current_user.has_access('moderator') %}
+        <a href="{{ url_for('admin.title.view', media_id=media.media_id) }}" class="btn btn-dark">Управлять</a>
+        {% endif %}
+        {% endif %}
+    </div>
+
+    {% if user_review %}
+    <div class="rev_col d-flex flex-column border mt-5 mb-5">
+        <h4 class="p-3">Ваш отзыв:</h4>
+        <div class="border w-100 p-3" style="min-height: 100px;">
+            {{markdown(user_review.text)|safe}}
+        </div>
+        <div class="border w-100 p-3">
+            Оценка: {{ user_review.rating }}/5 &#9733;
+        </div>
+    </div>
+    {% elif not current_user.is_anonymous%}
+    <div class="rev_row d-flex mb-4">
+        <form method="POST" class="flex-grow-1 col-6">
+            <div class="mb-3 mt-3 d-flex flex-column">
+                <label for="review" class="fs-4">Оставьте отзыв:</label>
+                <textarea class="form-control flex-grow-1 w-100" name="review" id="review" cols="40" rows="6"></textarea>
+            </div>
+            <div class="mb-3 form-group col-6">
+                <label for="rating_select" class="fs-4">Оценка</label>
+                <select class="form-control" id="rating_select" name="rating_select">
+                    <option value="5">5/5</option>
+                    <option value="4">4/5</option>
+                    <option value="3">3/5</option>
+                    <option value="2">2/5</option>
+                    <option value="1">1/5</option>
+                </select>
+            </div>
+            <div class="mb-3 text-center">
+                <input type="submit" class="btn btn-secondary" value="Сохранить">
+            </div>
+        </form>
+    </div>
+    {% else %}
+    <h4 class="mt-5"><a href="{{ url_for('auth.login', next=request.endpoint) }}">Авторизуйтесь</a>, чтобы оставить свой отзыв</h4>
+    {% endif %}
+
+    {% if reviews.__len__() == 0 %}
+    <h4 class="mb-5">Отзывов еще нет. Оставьте свой отзыв первым!</h4>
+    {% else %}
+    {% for rev in reviews %}
+    <div class="rev_col d-flex flex-column border border-black mt-5 mb-5">
+        <h5 class="p-3">{{ rev.user }}:</h5>
+        <div class="border-top border-bottom border-black w-100 p-3" style="min-height: 100px;">
+            {{rev.text|safe}}
+        </div>
+        <div class="border w-100 p-3">
+            Оценка: {{ rev.rating }}/5 &#9733;
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block footermeta %}
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+<script>const easyMDE = new EasyMDE();</script>
+{% endblock %}

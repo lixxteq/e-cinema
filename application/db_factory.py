@@ -1,9 +1,12 @@
+from collections.abc import AsyncGenerator
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData, create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import declarative_base
-from config import Config
+from .wsgi_app.config import Config
 from flask_migrate import Migrate
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 Base = declarative_base(
     metadata=MetaData(naming_convention={
@@ -14,7 +17,7 @@ Base = declarative_base(
         "pk": "pk_%(table_name)s"
     }))
 
-class Database(SQLAlchemy):
+class FlaskDatabase(SQLAlchemy):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs, model_class=Base)
         self._app: Flask = kwargs['app']
@@ -30,3 +33,21 @@ class Database(SQLAlchemy):
 
     def init_migrate(self):
         return Migrate(self._app, self)
+
+class FastAPIDatabase():
+    def __init__(self, engine_uri):
+        self.engine = create_async_engine(engine_uri)
+        self.factory = async_sessionmaker(bind=self.engine)
+    
+    async def _retrieve_session(self) -> AsyncGenerator[AsyncSession, None]:
+        async with self.factory() as session:
+            try:
+                yield session
+                await session.commit()
+            except SQLAlchemyError as error:
+                await session.rollback()
+                raise error
+    
+    @property
+    def session(self):
+        return self._retrieve_session

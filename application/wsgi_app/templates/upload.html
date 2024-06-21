@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+
+{% block main %}
+<form method="post" enctype="multipart/form-data" action="http://localhost:39015/admin/api/upload?composite_id=sdfhfs2434_fds_ds">
+    <label for="file">File</label>
+    <input id="file" name="file" type="file" />
+    <input type="submit">
+</form>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% from "_formhelpers.html" import render_field %}
+
+{% block main %}
+<div class="d-flex h-100 flex-grow-1" style="background-image: url('{{ url_for("static", filename="image/lib-bg.jpg") }}'); background-size: cover">
+    <form class="container-fluid m-auto bg-white p-5 border round" method="POST" style="max-width: 35rem; --bs-bg-opacity: 0.8;">
+        {{ form.csrf_token }}
+        <p>{{render_field(form.login)}} </p>
+        <p>{{render_field(form.password)}}</p>
+        <p>{{render_field(form.remember_me)}}</p>
+    
+        <button type="submit" class="btn btn-secondary w-100">Войти</button>
+    </form>
+</div>
+{% endblock %}

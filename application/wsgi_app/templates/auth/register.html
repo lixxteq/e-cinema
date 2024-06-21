@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% from "_formhelpers.html" import render_field %}
+
+{% block headermeta %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+{% endblock %}
+
+{% block main %}
+<div class="d-flex h-100 flex-grow-1" style="background-image: url('{{ url_for('static', filename='image/lib-bg.jpg')|escape }}'); background-size: cover">
+    <form class="container-fluid m-auto bg-white p-5 border round" method="POST" style="max-width: 35rem; --bs-bg-opacity: 0.8;">
+        {{ form.csrf_token }}
+        <p>{{render_field(form.login)}} </p>
+        <p>{{render_field(form.display_name)}}</p>
+        <p>{{render_field(form.email)}}</p>
+        <p>{{render_field(form.password)}}</p>
+        <p>{{render_field(form.repeat_password)}}</p>
+    
+        <button id="signup" type="submit" class="btn btn-secondary w-100">Sign up</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block footermeta %}
+<script src="{{ url_for('static', filename='js/validateRegisterForm.js') }}"></script>
+{% endblock %}

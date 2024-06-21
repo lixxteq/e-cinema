@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block main %}
+<div class="container" style="background-color: rgba(208, 212, 216, 0.7);">
+    <div class="h-100 text-center d-flex flex-column p-3 flex-wrap">
+        <h1 class="text-body-secondary">E-Lib: Каталог книг</h1>
+        {% for book in books %}
+        <div class="card d-flex flex-row w-100" style="min-height: 250px">
+            <div class="d-flex col-4 justify-content-start gap-5">
+                <div class="cover-col col-4 flex-column flex-grow-1">
+                    <img src="{{ book.get_cover_url() }}" alt="Cover" class="border rounded-2 mw-100" style="max-height:100%;object-fit:cover;">
+                </div>
+            </div>
+            <div class="info_col d-flex ps-3 flex-column col-4 justify-content-center align-items-start text-start">
+                <div class="name-col">
+                    <p>Название книги</p>
+                    <h4>{{ book.name }}</h4>
+                </div>
+                <div class="pub-col">
+                    <p>Издательство</p>
+                    <h4>{{ book.publisher }}</h4>
+                </div>
+                <div class="year-col">
+                    <p>Год издания</p>
+                    <h4>{{ book.year }}</h4>
+                </div>
+            </div>
+
+            <div class="info_col d-flex col-4 flex-column justify-content-around">
+                <div class="text-center gap-3 mt-3 ">
+                    <h4>Жанры: </h4>
+                    <div class="d-flex genres-row flex-row flex-wrap justify-content-center">
+                        {% for g in book.genres %}
+                        <div class="bg-dark p-2 text-white border rounded-2">{{ g.name }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="rating-row d-flex flex-column">
+                    <h4>Рейтинг: </h4>
+                    <h4>{{ book.get_rating() }}/5 &#9733; (всего отзывов: {{ book.rating_amount }})</h4>
+                </div>
+            </div>
+        </div>
+        <div class="justify-content-end d-flex mb-3 gap-2">
+            <a href="{{ url_for('books.view', book_id=book.id) }}" class="btn btn-dark">Просмотреть</a>
+            {% if current_user.is_authenticated %}
+            {% if current_user.access_level >= access_level_map['moderator'] %}
+            <a href="{{ url_for('books.edit', book_id=book.id) }}" class="btn btn-dark">Редактировать</a>
+            {% endif %}
+            {% if current_user.access_level >= access_level_map['administrator'] %}
+            <a class="btn btn-danger" data-url="{{ url_for('books.delete', book_id=book.id) }}" data-bs-toggle="modal"
+            data-bs-target="#deleteModal" data-name="{{ book.name }}">Удалить</a>
+            {% endif %}
+            {% endif %}
+        </div>
+        {% endfor %}
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+p {
+    margin-bottom: 0;
+}
+
+.card {
+    background-color: #bdbbbb;
+}
+
+.alert-block {
+    position: absolute;
+    width: 80%;
+    top: 70px;
+    z-index: 100;
+}

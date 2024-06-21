@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% from "_formhelpers.html" import render_field %}
+
+{% block headermeta %}
+<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css"> -->
+{% endblock %}
+
+{% block main %}
+<div class="container text-white">
+    <h2 class="my-3 text-center text-uppercase font-weight-bold">Добавление новой книги</h2>
+
+    <form action="{{ url_for('admin.title.add') }}" method="POST" enctype="multipart/form-data">
+        <!-- <div class="mb-3 row">
+            <div class="col-md-12 d-flex flex-column">
+                <div class="mb-3">
+                    <label for="title">Название книги</label>
+                    <input class="form-control" type="text" name="name" id="name" >
+                </div>
+                <div class="mb-3">
+                    <label for="genre_list">Жанры</label>
+                    <select multiple class="form-select" name="genre_list" id="genre_list">
+                        <option value="0">Не выбрано</option>
+                        {% for genre in genres %}
+                        <option value="{{ genre.id }}">{{ genre.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="publisher">Издательство</label>
+                    <input class="form-control" type="text" name="publisher" id="publisher" >
+                </div>
+                <div class="mb-3">
+                    <label for="pages">Количество страниц</label>
+                    <input class="form-control" name="pages" type="number" id="pages" >
+                </div>
+                <div class="mb-3">
+                    <label for="year">Год создания</label>
+                    <input class="form-control" type="number" min="1850" max="2023" step="1" name="year" id="year">
+                </div>
+                <div class="mb-3 d-flex flex-column flex-grow-1">
+                    <label for="description">Описание книги</label>
+                    <textarea type="text" class="form-control flex-grow-1" name="description" id="description"></textarea>
+                </div>
+            </div>
+            <div class="col-md-12 d-flex flex-column">
+                <div class="mb-3">
+                    <label for="cover_file">Обложка</label>
+                    <input class="form-control" type="file" name="cover_file" id="cover_file">
+                </div>
+                <div class="mb-3 background-preview p-3 rounded d-flex align-items-center justify-content-center">
+                    <img src="#" class="img-fluid d-none" alt="Cover">
+                    <label for="cover_file" class="btn btn-dark">Выбрать обложку</label>
+                </div>
+            </div> -->
+        <!-- </div> -->
+        {{ form.csrf_token }}
+        <p>{{render_field(form.category)}} </p>
+        <p>{{render_field(form.name)}}</p>
+        <p>{{render_field(form.description)}}</p>
+        <p>{{render_field(form.year)}}</p>
+        <p>{{render_field(form.age_rate)}}</p>
+        <p>{{render_field(form.publisher)}}</p>
+        <p>{{render_field(form.country)}}</p>
+        <p>{{render_field(form.genres)}}</p>
+        <p>{{render_field(form.cover_file)}}</p>
+        <!-- <div class="mb-3 text-center">
+            <button type="submit" class="btn btn-primary">Создать книгу</button>
+        </div> -->
+        <p><input type="submit" value="Добавить"></p> 
+    </form>
+</div>
+
+{% endblock %}
+
+{% block footermeta %}
+<!-- <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script> -->
+<!-- <script>const easyMDE = new EasyMDE();</script> -->
+{% endblock %}
